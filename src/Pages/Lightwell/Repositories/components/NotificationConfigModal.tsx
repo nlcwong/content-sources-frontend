@@ -4,8 +4,6 @@ import {
   Form,
   FormGroup,
   FormHelperText,
-  FormSelect,
-  FormSelectOption,
   HelperText,
   HelperTextItem,
   Modal,
@@ -21,16 +19,27 @@ import {
   Tabs,
   TabTitleText,
 } from '@patternfly/react-core';
-import { cloneElement, ReactElement, useState } from 'react';
+import {
+  SeverityCriticalIcon,
+  SeverityImportantIcon,
+  SeverityModerateIcon,
+  SeverityMinorIcon,
+} from '@patternfly/react-icons';
+import {
+  t_global_color_severity_critical_100,
+  t_global_color_severity_important_100,
+  t_global_color_severity_moderate_100,
+  t_global_color_severity_minor_100,
+  t_global_spacer_sm,
+} from '@patternfly/react-tokens';
+import { cloneElement, type ComponentType, ReactElement, useState } from 'react';
+import { createUseStyles } from 'react-jss';
 
-type Severity = 'critical' | 'high' | 'medium' | 'low';
-type Audience = 'all' | 'admins' | 'me';
-
+type Severity = 'critical' | 'important' | 'moderate' | 'low';
 export interface NotificationPreferences {
   enabled: boolean;
+  severityEnabled: boolean;
   severityThreshold: Severity;
-  audience: Audience;
-  notifyNewPackages: boolean;
 }
 
 type NotificationConfigModalProps = {
@@ -39,18 +48,44 @@ type NotificationConfigModalProps = {
   children: ReactElement<{ onClick?: (event: React.MouseEvent) => void }>;
 };
 
-const severityOptions: { value: Severity; label: string }[] = [
-  { value: 'critical', label: 'Critical only' },
-  { value: 'high', label: 'High and above' },
-  { value: 'medium', label: 'Medium and above' },
-  { value: 'low', label: 'All severities' },
+const severityOptions: {
+  value: Severity;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+  color: string;
+}[] = [
+  {
+    value: 'critical',
+    label: 'Critical',
+    icon: SeverityCriticalIcon,
+    color: t_global_color_severity_critical_100.value,
+  },
+  {
+    value: 'important',
+    label: 'Important and above',
+    icon: SeverityImportantIcon,
+    color: t_global_color_severity_important_100.value,
+  },
+  {
+    value: 'moderate',
+    label: 'Moderate and above',
+    icon: SeverityModerateIcon,
+    color: t_global_color_severity_moderate_100.value,
+  },
+  {
+    value: 'low',
+    label: 'All severities',
+    icon: SeverityMinorIcon,
+    color: t_global_color_severity_minor_100.value,
+  },
 ];
 
-const audienceOptions: { value: Audience; label: string }[] = [
-  { value: 'all', label: 'All organization members' },
-  { value: 'admins', label: 'Organization admins only' },
-  { value: 'me', label: 'Only me' },
-];
+const useSeverityStyles = createUseStyles({
+  severityLabel: {
+    display: 'inline-flex',
+    alignItems: 'center',
+  },
+});
 
 const NotificationConfigModal = ({
   preferences: savedPreferences,
@@ -76,6 +111,8 @@ const NotificationConfigModal = ({
       }
     },
   });
+
+  const severityClasses = useSeverityStyles();
 
   const handleSave = () => {
     onSave(draft);
@@ -126,60 +163,48 @@ const NotificationConfigModal = ({
 
                     {draft.enabled && (
                       <>
-                        <FormGroup fieldId='notification-audience' label='Send notifications to'>
-                          <FormSelect
-                            id='notification-audience'
-                            value={draft.audience}
-                            onChange={(_event, value) =>
-                              setDraft((prev) => ({ ...prev, audience: value as Audience }))
-                            }
-                            ouiaId='notification-audience-select'
-                          >
-                            {audienceOptions.map(({ value, label }) => (
-                              <FormSelectOption key={value} value={value} label={label} />
-                            ))}
-                          </FormSelect>
-                        </FormGroup>
-
-                        <FormGroup fieldId='notify-new-packages' label='New packages'>
+                        <FormGroup fieldId='severity-toggle' label='Severity threshold'>
                           <Switch
-                            id='notify-new-packages'
-                            label='Notify me when new packages are added to selected repositories'
-                            isChecked={draft.notifyNewPackages}
-                            onChange={(_event, checked) =>
-                              setDraft((prev) => ({ ...prev, notifyNewPackages: checked }))
+                            id='severity-toggle'
+                            label={
+                              draft.severityEnabled
+                                ? 'Get notified immediately when fixes are available for vulnerabilities of the following severity.'
+                                : 'Severity threshold notifications are off'
                             }
-                            ouiaId='notify-new-packages-toggle'
+                            isChecked={draft.severityEnabled}
+                            onChange={(_event, checked) =>
+                              setDraft((prev) => ({ ...prev, severityEnabled: checked }))
+                            }
+                            ouiaId='severity-toggle'
                           />
                         </FormGroup>
 
-                        <FormGroup
-                          fieldId='severity-threshold'
-                          label='Severity threshold'
-                          isRequired
-                          role='radiogroup'
-                        >
-                          <FormHelperText>
-                            <HelperText>
-                              <HelperTextItem>
-                                Get notified immediately when fixes are available for
-                                vulnerabilities at or above this severity.
-                              </HelperTextItem>
-                            </HelperText>
-                          </FormHelperText>
-                          {severityOptions.map(({ value, label }) => (
-                            <Radio
-                              key={value}
-                              id={`severity-${value}`}
-                              name='severity-threshold'
-                              label={label}
-                              isChecked={draft.severityThreshold === value}
-                              onChange={() =>
-                                setDraft((prev) => ({ ...prev, severityThreshold: value }))
-                              }
-                            />
-                          ))}
-                        </FormGroup>
+                        {draft.severityEnabled && (
+                          <FormGroup
+                            fieldId='severity-threshold'
+                            role='radiogroup'
+                          >
+                            {severityOptions.map(({ value, label, icon: SevIcon, color }) => (
+                              <Radio
+                                key={value}
+                                id={`severity-${value}`}
+                                name='severity-threshold'
+                                label={
+                                  <span className={severityClasses.severityLabel}>
+                                    <span style={{ color, marginRight: t_global_spacer_sm.var, display: 'inline-flex' }}>
+                                      <SevIcon />
+                                    </span>
+                                    {label}
+                                  </span>
+                                }
+                                isChecked={draft.severityThreshold === value}
+                                onChange={() =>
+                                  setDraft((prev) => ({ ...prev, severityThreshold: value }))
+                                }
+                              />
+                            ))}
+                          </FormGroup>
+                        )}
                       </>
                     )}
                   </Form>
@@ -191,15 +216,6 @@ const NotificationConfigModal = ({
                 <TabContentBody hasPadding>
                   <Content component='p'>
                     Connect a Slack workspace to receive notifications in your team's channels. Coming soon.
-                  </Content>
-                </TabContentBody>
-              </TabContent>
-            </Tab>
-            <Tab eventKey='digest' title={<TabTitleText>Weekly digest</TabTitleText>}>
-              <TabContent id='digest-tab'>
-                <TabContentBody hasPadding>
-                  <Content component='p'>
-                    Receive a weekly summary of all activity across your Lightwell repositories. Coming soon.
                   </Content>
                 </TabContentBody>
               </TabContent>

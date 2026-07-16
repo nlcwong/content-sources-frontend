@@ -73,7 +73,9 @@ const ecosystemDisplay = (contentType: string) => {
 const App = () => {
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
     enabled: false,
-    securityLevels: ['validated', 'remediated'],
+    severityThreshold: 'high',
+    audience: 'all',
+    notifyNewPackages: true,
   });
   const [notifiedRepoUUIDs, setNotifiedRepoUUIDs] = useState<Set<string>>(new Set());
 
@@ -92,28 +94,32 @@ const App = () => {
   return (
     <Page>
       <PageSection>
-        <Stack hasGutter>
-          <Content component='h1'>Repositories</Content>
-          <Content component='p'>
-            Browse Lightwell repositories by ecosystem and security level.
-          </Content>
-        </Stack>
+        <Flex
+          justifyContent={{ default: 'justifyContentSpaceBetween' }}
+          alignItems={{ default: 'alignItemsFlexStart' }}
+        >
+          <Flex direction={{ default: 'column' }} grow={{ default: 'grow' }}>
+            <Content component='h1'>Repositories</Content>
+            <Content component='p'>
+              Browse Lightwell repositories by ecosystem and security level.
+            </Content>
+          </Flex>
+          <NotificationConfigModal
+            preferences={notificationPrefs}
+            onSave={setNotificationPrefs}
+          >
+            <Button
+              size='sm'
+              variant='secondary'
+              aria-label='Notification preferences'
+              icon={<BellIcon />}
+            >
+              Notifications
+            </Button>
+          </NotificationConfigModal>
+        </Flex>
       </PageSection>
       <PageSection>
-        <Flex justifyContent={{ default: 'justifyContentFlexEnd' }} style={{ marginBottom: '16px' }}>
-          <FlexItem>
-            <NotificationConfigModal
-              preferences={notificationPrefs}
-              onSave={setNotificationPrefs}
-            >
-              <Button
-                variant='plain'
-                aria-label='Notification preferences'
-                icon={<BellIcon />}
-              />
-            </NotificationConfigModal>
-          </FlexItem>
-        </Flex>
         <Card style={{ padding: '24px' }}>
           <Table aria-label='Lightwell repositories table' isStriped>
             <Thead>
@@ -123,7 +129,7 @@ const App = () => {
                 <Th width={15}>Security level</Th>
                 <Th width={10}>Packages</Th>
                 <Th width={10}>Versions</Th>
-                <Th width={10}>Notify</Th>
+                {notificationPrefs.enabled && <Th width={10}>Notify</Th>}
               </Tr>
             </Thead>
             <Tbody>
@@ -166,15 +172,16 @@ const App = () => {
                   </Td>
                   <Td>{repo.package_count.toLocaleString()}</Td>
                   <Td>{repo.version_count.toLocaleString()}</Td>
-                  <Td>
-                    <Switch
-                      id={`notify-${repo.uuid}`}
-                      aria-label={`Toggle notifications for ${formatRepositoryName(repo.content_type, repo.security_level, repo.name)}`}
-                      isChecked={notifiedRepoUUIDs.has(repo.uuid)}
-                      onChange={() => toggleRepoNotification(repo.uuid)}
-                      isDisabled={!notificationPrefs.enabled}
-                    />
-                  </Td>
+                  {notificationPrefs.enabled && (
+                    <Td>
+                      <Switch
+                        id={`notify-${repo.uuid}`}
+                        aria-label={`Toggle notifications for ${formatRepositoryName(repo.content_type, repo.security_level, repo.name)}`}
+                        isChecked={notifiedRepoUUIDs.has(repo.uuid)}
+                        onChange={() => toggleRepoNotification(repo.uuid)}
+                      />
+                    </Td>
+                  )}
                 </Tr>
               ))}
             </Tbody>

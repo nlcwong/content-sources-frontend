@@ -71,9 +71,8 @@ const RepositoriesTable = () => {
   const [perPage, setPerPage] = useState(storedPerPage);
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
     enabled: false,
-    severityThreshold: 'high',
-    audience: 'all',
-    notifyNewPackages: true,
+    severityEnabled: true,
+    severityThreshold: 'important',
   });
   const [notifiedRepoUUIDs, setNotifiedRepoUUIDs] = useState<Set<string>>(new Set());
 
@@ -145,7 +144,7 @@ const RepositoriesTable = () => {
       ? [
           {
             title: 'Notify',
-            width: 10,
+            width: 10 as const,
             info: {
               tooltip: 'Toggle email notifications for new packages in this repository.',
             },
