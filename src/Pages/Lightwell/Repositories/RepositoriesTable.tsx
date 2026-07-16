@@ -71,7 +71,6 @@ const RepositoriesTable = () => {
   const [perPage, setPerPage] = useState(storedPerPage);
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
     enabled: false,
-    severityEnabled: true,
     severityThreshold: 'important',
   });
   const [notifiedRepoUUIDs, setNotifiedRepoUUIDs] = useState<Set<string>>(new Set());

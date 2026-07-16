@@ -38,7 +38,6 @@ import { createUseStyles } from 'react-jss';
 type Severity = 'critical' | 'important' | 'moderate' | 'low';
 export interface NotificationPreferences {
   enabled: boolean;
-  severityEnabled: boolean;
   severityThreshold: Severity;
 }
 
@@ -162,50 +161,38 @@ const NotificationConfigModal = ({
                     </FormGroup>
 
                     {draft.enabled && (
-                      <>
-                        <FormGroup fieldId='severity-toggle' label='Severity threshold'>
-                          <Switch
-                            id='severity-toggle'
+                      <FormGroup
+                        fieldId='severity-threshold'
+                        label='Severity threshold'
+                        role='radiogroup'
+                      >
+                        <FormHelperText>
+                          <HelperText>
+                            <HelperTextItem>
+                              Get notified when fixes are available for vulnerabilities of the following severity.
+                            </HelperTextItem>
+                          </HelperText>
+                        </FormHelperText>
+                        {severityOptions.map(({ value, label, icon: SevIcon, color }) => (
+                          <Radio
+                            key={value}
+                            id={`severity-${value}`}
+                            name='severity-threshold'
                             label={
-                              draft.severityEnabled
-                                ? 'Get notified immediately when fixes are available for vulnerabilities of the following severity.'
-                                : 'Severity threshold notifications are off'
+                              <span className={severityClasses.severityLabel}>
+                                <span style={{ color, marginRight: t_global_spacer_sm.var, display: 'inline-flex' }}>
+                                  <SevIcon />
+                                </span>
+                                {label}
+                              </span>
                             }
-                            isChecked={draft.severityEnabled}
-                            onChange={(_event, checked) =>
-                              setDraft((prev) => ({ ...prev, severityEnabled: checked }))
+                            isChecked={draft.severityThreshold === value}
+                            onChange={() =>
+                              setDraft((prev) => ({ ...prev, severityThreshold: value }))
                             }
-                            ouiaId='severity-toggle'
                           />
-                        </FormGroup>
-
-                        {draft.severityEnabled && (
-                          <FormGroup
-                            fieldId='severity-threshold'
-                            role='radiogroup'
-                          >
-                            {severityOptions.map(({ value, label, icon: SevIcon, color }) => (
-                              <Radio
-                                key={value}
-                                id={`severity-${value}`}
-                                name='severity-threshold'
-                                label={
-                                  <span className={severityClasses.severityLabel}>
-                                    <span style={{ color, marginRight: t_global_spacer_sm.var, display: 'inline-flex' }}>
-                                      <SevIcon />
-                                    </span>
-                                    {label}
-                                  </span>
-                                }
-                                isChecked={draft.severityThreshold === value}
-                                onChange={() =>
-                                  setDraft((prev) => ({ ...prev, severityThreshold: value }))
-                                }
-                              />
-                            ))}
-                          </FormGroup>
-                        )}
-                      </>
+                        ))}
+                      </FormGroup>
                     )}
                   </Form>
                 </TabContentBody>

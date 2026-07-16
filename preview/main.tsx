@@ -73,9 +73,7 @@ const ecosystemDisplay = (contentType: string) => {
 const App = () => {
   const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
     enabled: false,
-    severityThreshold: 'high',
-    audience: 'all',
-    notifyNewPackages: true,
+    severityThreshold: 'important',
   });
   const [notifiedRepoUUIDs, setNotifiedRepoUUIDs] = useState<Set<string>>(new Set());
 
