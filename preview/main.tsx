@@ -172,12 +172,16 @@ const App = () => {
                   <Td>{repo.version_count.toLocaleString()}</Td>
                   {notificationPrefs.enabled && (
                     <Td>
-                      <Switch
-                        id={`notify-${repo.uuid}`}
-                        aria-label={`Toggle notifications for ${formatRepositoryName(repo.content_type, repo.security_level, repo.name)}`}
-                        isChecked={notifiedRepoUUIDs.has(repo.uuid)}
-                        onChange={() => toggleRepoNotification(repo.uuid)}
-                      />
+                      {repo.security_level === 'remediated' ? (
+                        <Switch
+                          id={`notify-${repo.uuid}`}
+                          aria-label={`Toggle notifications for ${formatRepositoryName(repo.content_type, repo.security_level, repo.name)}`}
+                          isChecked={notifiedRepoUUIDs.has(repo.uuid)}
+                          onChange={() => toggleRepoNotification(repo.uuid)}
+                        />
+                      ) : (
+                        'N/A'
+                      )}
                     </Td>
                   )}
                 </Tr>

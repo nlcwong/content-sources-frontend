@@ -316,13 +316,17 @@ const RepositoriesTable = () => {
                             <Td>{version_count?.toLocaleString() ?? '0'}</Td>
                             {notificationPrefs.enabled && (
                               <Td>
-                                <Switch
-                                  id={`notify-${uuid}`}
-                                  aria-label={`Toggle notifications for ${formatRepositoryName(content_type, security_level, name)}`}
-                                  isChecked={notifiedRepoUUIDs.has(uuid)}
-                                  onChange={() => toggleRepoNotification(uuid)}
-                                  ouiaId={`notify-toggle-${uuid}`}
-                                />
+                                {security_level === 'remediated' ? (
+                                  <Switch
+                                    id={`notify-${uuid}`}
+                                    aria-label={`Toggle notifications for ${formatRepositoryName(content_type, security_level, name)}`}
+                                    isChecked={notifiedRepoUUIDs.has(uuid)}
+                                    onChange={() => toggleRepoNotification(uuid)}
+                                    ouiaId={`notify-toggle-${uuid}`}
+                                  />
+                                ) : (
+                                  'N/A'
+                                )}
                               </Td>
                             )}
                           </Tr>
