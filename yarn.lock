@@ -2444,10 +2444,10 @@
   resolved "https://registry.yarnpkg.com/@polka/url/-/url-1.0.0-next.29.tgz#5a40109a1ab5f84d6fd8fc928b19f367cbe7e7b1"
   integrity sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww==
 
-"@project-kessel/react-kessel-access-check@^0.5.1":
-  version "0.5.1"
-  resolved "https://registry.yarnpkg.com/@project-kessel/react-kessel-access-check/-/react-kessel-access-check-0.5.1.tgz#64388bb2410b3905b00a2852457402121cd31e71"
-  integrity sha512-hi/z0I4ANeoxG1RYpcaNVmFus7K2bTFHsVLOleK4QojJPqmf0ZTICo8rxl6RdjFm6bWeOpSRzTL6jlRSQCSD/Q==
+"@project-kessel/react-kessel-access-check@^0.5.3":
+  version "0.5.3"
+  resolved "https://registry.yarnpkg.com/@project-kessel/react-kessel-access-check/-/react-kessel-access-check-0.5.3.tgz#47bdbde51f25c6570782ad4438e9e0a964b74a58"
+  integrity sha512-mA5yOO5l9laPYSkh6FDZ8RsIH1vCqvdx9EjZkpWZBbWGEbjZ0i1fQjYxEo6hpByfYy3dxpws54jT+smNr6aKNw==
 
 "@protobufjs/aspromise@^1.1.1", "@protobufjs/aspromise@^1.1.2":
   version "1.1.2"
@@ -12120,9 +12120,9 @@ webpack@^5.95.0:
     webpack-sources "^3.3.4"
 
 websocket-driver@>=0.5.1, websocket-driver@^0.7.4:
-  version "0.7.4"
-  resolved "https://registry.yarnpkg.com/websocket-driver/-/websocket-driver-0.7.4.tgz#89ad5295bbf64b480abcba31e4953aca706f5760"
-  integrity sha512-b17KeDIQVjvb0ssuSDF2cYXSg2iztliJ4B9WdsuB6J952qCPKmnVq4DyW5motImXHDC1cBT/1UezrJVsKw5zjg==
+  version "0.7.5"
+  resolved "https://registry.yarnpkg.com/websocket-driver/-/websocket-driver-0.7.5.tgz#569d22764ab21f2de20af0e74b411e8ae5a0fa46"
+  integrity sha512-ZL2+3c7kMBdIRCMz6l8jQMHyGVxj+UL+xVk74Ombiciboca8rHa15L86B19E5oh1pL9Ii/uj54gtsIrZGMo6zA==
   dependencies:
     http-parser-js ">=0.5.1"
     safe-buffer ">=5.1.0"
