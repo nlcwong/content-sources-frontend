@@ -75,6 +75,17 @@ const RepositoriesTable = () => {
   });
   const [notifiedRepoUUIDs, setNotifiedRepoUUIDs] = useState<Set<string>>(new Set());
 
+  const handleNotificationSave = (prefs: NotificationPreferences) => {
+    const justEnabled = prefs.enabled && !notificationPrefs.enabled;
+    setNotificationPrefs(prefs);
+    if (justEnabled) {
+      const remediated = repositories
+        .filter((r) => r.security_level === 'remediated')
+        .map((r) => r.uuid);
+      setNotifiedRepoUUIDs((prev) => new Set([...prev, ...remediated]));
+    }
+  };
+
   const toggleRepoNotification = (uuid: string) => {
     setNotifiedRepoUUIDs((prev) => {
       const next = new Set(prev);
@@ -181,7 +192,7 @@ const RepositoriesTable = () => {
         actionContent={
           <NotificationConfigModal
             preferences={notificationPrefs}
-            onSave={setNotificationPrefs}
+            onSave={handleNotificationSave}
           >
             <Button
               size='sm'
