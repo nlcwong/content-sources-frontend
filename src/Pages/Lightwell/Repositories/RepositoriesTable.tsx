@@ -11,8 +11,9 @@ import {
   Pagination,
   PaginationVariant,
   Stack,
+  Switch,
 } from '@patternfly/react-core';
-import { CodeIcon, JavaIcon, PythonIcon } from '@patternfly/react-icons';
+import { BellIcon, CodeIcon, JavaIcon, PythonIcon } from '@patternfly/react-icons';
 import { SkeletonTable } from '@patternfly/react-component-groups';
 import {
   Table,
@@ -36,7 +37,11 @@ import { FilterData } from 'services/Content/ContentApi';
 import { useContentListQuery } from 'services/Content/ContentQueries';
 
 import { LIGHTWELL_FEATURE_NAME, LIGHTWELL_USE_MOCK, lightwellReposPerPageKey } from '../constants';
-import { getMockLightwellRepositoryList } from '../mockRepositories';
+import { useLightwellDemo } from '../LightwellDemoContext';
+import {
+  getDemoLightwellRepositoryList,
+  getMockLightwellRepositoryList,
+} from '../mockRepositories';
 import {
   formatEcosystemDisplay,
   getRepositoryDescription,
@@ -44,6 +49,9 @@ import {
   getRepositoryPathSlug,
 } from '../helpers';
 import ConnectRepositoryModal from './components/ConnectRepositoryModal';
+import NotificationConfigModal, {
+  type NotificationPreferences,
+} from './components/NotificationConfigModal';
 import { capitalize } from 'lodash';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
@@ -62,19 +70,51 @@ const useStyles = createUseStyles({
 const RepositoriesTable = () => {
   const classes = useStyles();
   const navigate = useNavigate();
+  const isDemo = useLightwellDemo();
   const [page, setPage] = useState(1);
   const storedPerPage = Number(localStorage.getItem(lightwellReposPerPageKey)) || 20;
   const [perPage, setPerPage] = useState(storedPerPage);
+  const [notificationPrefs, setNotificationPrefs] = useState<NotificationPreferences>({
+    enabled: false,
+    severityThreshold: 'important',
+  });
+  const [notifiedRepoUUIDs, setNotifiedRepoUUIDs] = useState<Set<string>>(new Set());
+
+  const handleNotificationSave = (prefs: NotificationPreferences) => {
+    const justEnabled = prefs.enabled && !notificationPrefs.enabled;
+    setNotificationPrefs(prefs);
+    if (justEnabled) {
+      const remediated = repositories
+        .filter((r) => r.security_level === 'remediated')
+        .map((r) => r.uuid);
+      setNotifiedRepoUUIDs((prev) => new Set([...prev, ...remediated]));
+    }
+  };
+
+  const toggleRepoNotification = (uuid: string) => {
+    setNotifiedRepoUUIDs((prev) => {
+      const next = new Set(prev);
+      if (next.has(uuid)) {
+        next.delete(uuid);
+      } else {
+        next.add(uuid);
+      }
+      return next;
+    });
+  };
+
   const filters: FilterData = {
     feature_name: LIGHTWELL_FEATURE_NAME,
   };
 
-  // Set to true in constants.ts to use mock repositories and packages
-  const useMock = LIGHTWELL_USE_MOCK;
+  const useMock = LIGHTWELL_USE_MOCK || isDemo;
 
   const mockRepositoryListQuery = useQuery({
-    queryKey: ['lightwell-repositories-mock', page, perPage, filters],
-    queryFn: () => getMockLightwellRepositoryList(page, perPage, filters),
+    queryKey: ['lightwell-repositories-mock', page, perPage, filters, isDemo],
+    queryFn: () =>
+      isDemo
+        ? getDemoLightwellRepositoryList(page, perPage, filters)
+        : getMockLightwellRepositoryList(page, perPage, filters),
     placeholderData: keepPreviousData,
     staleTime: 20000,
     enabled: useMock,
@@ -117,6 +157,17 @@ const RepositoriesTable = () => {
         tooltip: 'Total package versions available in this repository.',
       },
     },
+    ...(notificationPrefs.enabled
+      ? [
+          {
+            title: 'Notify',
+            width: 10 as const,
+            info: {
+              tooltip: 'Toggle email notifications for new packages in this repository.',
+            },
+          },
+        ]
+      : []),
   ];
 
   const onSetPage = (_, newPage: number) => setPage(newPage);
@@ -145,6 +196,22 @@ const RepositoriesTable = () => {
         ouiaId='lightwell-header'
         paragraph='Browse Lightwell repositories by ecosystem and security level.'
         showOpenSourceBadge={false}
+        actionContent={
+          <NotificationConfigModal
+            preferences={notificationPrefs}
+            onSave={handleNotificationSave}
+          >
+            <Button
+              size='sm'
+              variant='secondary'
+              aria-label='Notification preferences'
+              ouiaId='lightwell-notification-config-button'
+              icon={<BellIcon />}
+            >
+              Notifications
+            </Button>
+          </NotificationConfigModal>
+        }
       />
       <PageSection hasBodyWrapper={false} className={`${spacing.pt_0} ${spacing.pb_2xl}`}>
         <Grid data-ouia-component-id='lightwell-repositories-page'>
@@ -265,6 +332,21 @@ const RepositoriesTable = () => {
                             </Td>
                             <Td>{package_count.toLocaleString() ?? '0'}</Td>
                             <Td>{version_count?.toLocaleString() ?? '0'}</Td>
+                            {notificationPrefs.enabled && (
+                              <Td>
+                                {security_level === 'remediated' ? (
+                                  <Switch
+                                    id={`notify-${uuid}`}
+                                    aria-label={`Toggle notifications for ${formatRepositoryName(content_type, security_level, name)}`}
+                                    isChecked={notifiedRepoUUIDs.has(uuid)}
+                                    onChange={() => toggleRepoNotification(uuid)}
+                                    ouiaId={`notify-toggle-${uuid}`}
+                                  />
+                                ) : (
+                                  'N/A'
+                                )}
+                              </Td>
+                            )}
                           </Tr>
                         );
                       })}

@@ -42,7 +42,7 @@
     "@patternfly/react-styles": "^6.3.1",
     "@patternfly/react-table": "^6.3.1",
     "@patternfly/react-templates": "^6.6.0",
-    "@project-kessel/react-kessel-access-check": "^0.5.1",
+    "@project-kessel/react-kessel-access-check": "^0.5.3",
     "@redhat-cloud-services/frontend-components": "^7.9.0",
     "@redhat-cloud-services/frontend-components-config": "^6.11.2",
     "@redhat-cloud-services/frontend-components-notifications": "^6.10.0",
@@ -97,6 +97,7 @@
     "@types/react-router-dom": "^5.3.3",
     "@typescript-eslint/eslint-plugin": "^8.63.0",
     "@typescript-eslint/parser": "^8.63.0",
+    "@vitejs/plugin-react": "^6.0.3",
     "babel-plugin-istanbul": "^8.0.0",
     "eslint": "^9.39.4",
     "eslint-config-prettier": "^10.1.8",
@@ -121,6 +122,7 @@
     "ts-jest": "^29.4.11",
     "ts-patch": ">=3.3.0 <4.0.0",
     "typescript": "^5.9.2",
+    "vite": "^8.1.4",
     "webpack-bundle-analyzer": "^5.2.0"
   },
   "insights": {

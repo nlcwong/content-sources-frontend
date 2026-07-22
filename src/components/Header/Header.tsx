@@ -23,6 +23,7 @@ interface HeaderProps {
   paragraph: string;
   aboutData?: Omit<HelpPopoverProps, 'children'>;
   showOpenSourceBadge?: boolean;
+  actionContent?: ReactElement;
 }
 
 export default function Header({
@@ -31,10 +32,12 @@ export default function Header({
   paragraph,
   aboutData,
   showOpenSourceBadge,
+  actionContent,
 }: HeaderProps) {
   return (
     <PageHeader>
-      <Flex className={`${spacing.mXs} ${spacing.pbSm}`} direction={{ default: 'column' }}>
+      <Flex className={`${spacing.mXs} ${spacing.pbSm}`} justifyContent={{ default: 'justifyContentSpaceBetween' }} alignItems={{ default: 'alignItemsFlexStart' }}>
+        <Flex direction={{ default: 'column' }} grow={{ default: 'grow' }}>
         <PageHeaderTitle
           title={
             <>
@@ -61,6 +64,8 @@ export default function Header({
         <Content component='p' ouiaId={ouiaId}>
           {paragraph}
         </Content>
+        </Flex>
+        {actionContent ? actionContent : null}
       </Flex>
     </PageHeader>
   );
