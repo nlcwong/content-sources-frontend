@@ -9,6 +9,7 @@ import usePageSafe from 'Hooks/usePageSafe';
 import PackagesTable from 'Pages/Lightwell/Packages/PackagesTable';
 import PackageDetails from 'Pages/Lightwell/Packages/PackageDetails';
 import RepositoriesTable from 'Pages/Lightwell/Repositories/RepositoriesTable';
+import CVEDetailsPage from 'Pages/Lightwell/CVE/CVEDetailsPage';
 import { LightwellDemoLayout } from 'Pages/Lightwell/LightwellDemoContext';
 
 export default function LightwellApp() {
@@ -25,11 +26,15 @@ export default function LightwellApp() {
       <Routes>
         <Route path='demo' element={<LightwellDemoLayout />}>
           <Route index element={<RepositoriesTable />} />
+          <Route path=':repoName/:group/:packageName/cve/:cveId' element={<CVEDetailsPage />} />
+          <Route path=':repoName/:packageName/cve/:cveId' element={<CVEDetailsPage />} />
           <Route path=':repoName/:group/:packageName' element={<PackageDetails />} />
           <Route path=':repoName/:packageName' element={<PackageDetails />} />
           <Route path=':repoName' element={<PackagesTable />} />
         </Route>
         <Route index element={<RepositoriesTable />} />
+        <Route path=':repoName/:group/:packageName/cve/:cveId' element={<CVEDetailsPage />} />
+        <Route path=':repoName/:packageName/cve/:cveId' element={<CVEDetailsPage />} />
         <Route path=':repoName/:group/:packageName' element={<PackageDetails />} />
         <Route path=':repoName/:packageName' element={<PackageDetails />} />
         <Route path=':repoName' element={<PackagesTable />} />

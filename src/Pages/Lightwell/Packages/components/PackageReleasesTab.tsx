@@ -5,6 +5,8 @@ import { useMemo } from 'react';
 import { RepositoryPackageReleaseInfo } from 'services/Content/ContentApi';
 import CopyLabel from './CopyLabel';
 import { compareReleasesDesc, sortVersionsDesc } from '../../helpers';
+import CVETable from '../../CVE/CVETable';
+import { getMockCVEsForRelease } from '../../CVE/mockCVEData';
 
 type PackageReleasesTabProps = {
   version: string;
@@ -52,27 +54,38 @@ const PackageReleasesTab = ({
       <Title headingLevel='h2' size='lg'>
         Releases for version {version}
       </Title>
-      <Table aria-label={`Releases for ${version}`} variant={TableVariant.compact}>
-        <Thead>
-          <Tr>
-            <Th>Release</Th>
-            <Th width={15}>Date</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {builds.map((build) => {
-            const fullVersion = buildVersionFromRelease(build);
-            return (
-              <Tr key={fullVersion}>
-                <Td dataLabel='Release'>
-                  <CopyLabel copyText={formatCopyText(fullVersion)}>{fullVersion}</CopyLabel>
-                </Td>
-                <Td dataLabel='Date'>{build.created_at?.split('T')[0] ?? '—'}</Td>
-              </Tr>
-            );
-          })}
-        </Tbody>
-      </Table>
+      {builds.map((build) => {
+        const fullVersion = buildVersionFromRelease(build);
+        const releaseCVEs = getMockCVEsForRelease(fullVersion);
+        return (
+          <Flex key={fullVersion} direction={{ default: 'column' }} gap={{ default: 'gapSm' }}>
+            <Table aria-label={`Release ${fullVersion}`} variant={TableVariant.compact}>
+              <Thead>
+                <Tr>
+                  <Th>Release</Th>
+                  <Th width={15}>Date</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                <Tr>
+                  <Td dataLabel='Release'>
+                    <CopyLabel copyText={formatCopyText(fullVersion)}>{fullVersion}</CopyLabel>
+                  </Td>
+                  <Td dataLabel='Date'>{build.created_at?.split('T')[0] ?? '—'}</Td>
+                </Tr>
+              </Tbody>
+            </Table>
+            {releaseCVEs.length > 0 && (
+              <>
+                <Title headingLevel='h3' size='md'>
+                  CVEs fixed in {fullVersion}
+                </Title>
+                <CVETable cves={releaseCVEs} />
+              </>
+            )}
+          </Flex>
+        );
+      })}
       <Title headingLevel='h2' size='lg'>
         Available versions
       </Title>
