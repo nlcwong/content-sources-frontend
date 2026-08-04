@@ -157,12 +157,7 @@ const RepositoriesTable = () => {
         ouiaId='lightwell-header'
         paragraph='Browse Lightwell repositories by ecosystem and security level.'
         showOpenSourceBadge={false}
-      />
-      <Flex
-        justifyContent={{ default: 'justifyContentFlexEnd' }}
-        className={`${spacing.pxLg} ${spacing.pbSm}`}
-      >
-        <FlexItem>
+        actionContent={
           <Button
             variant='secondary'
             icon={<KeyIcon />}
@@ -171,8 +166,8 @@ const RepositoriesTable = () => {
           >
             Manage tokens
           </Button>
-        </FlexItem>
-      </Flex>
+        }
+      />
       <PageSection hasBodyWrapper={false} className={`${spacing.pt_0} ${spacing.pb_2xl}`}>
         <Grid data-ouia-component-id='lightwell-repositories-page'>
           <Hide hide={countIsZero || count < 10}>

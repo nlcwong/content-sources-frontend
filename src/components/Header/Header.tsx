@@ -7,7 +7,7 @@ import {
 } from '@redhat-cloud-services/frontend-components';
 import { PageHeaderProps as _PageHeaderProps } from '@redhat-cloud-services/frontend-components/PageHeader/PageHeader';
 
-import { FunctionComponent, ReactElement } from 'react';
+import { FunctionComponent, ReactElement, ReactNode } from 'react';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import HelpPopover, { HelpPopoverProps } from '../HelpPopover';
 
@@ -23,6 +23,7 @@ interface HeaderProps {
   paragraph: string;
   aboutData?: Omit<HelpPopoverProps, 'children'>;
   showOpenSourceBadge?: boolean;
+  actionContent?: ReactNode;
 }
 
 export default function Header({
@@ -31,10 +32,15 @@ export default function Header({
   paragraph,
   aboutData,
   showOpenSourceBadge,
+  actionContent,
 }: HeaderProps) {
   return (
     <PageHeader>
       <Flex className={`${spacing.mXs} ${spacing.pbSm}`} direction={{ default: 'column' }}>
+        <Flex
+          justifyContent={{ default: 'justifyContentSpaceBetween' }}
+          alignItems={{ default: 'alignItemsCenter' }}
+        >
         <PageHeaderTitle
           title={
             <>
@@ -58,6 +64,8 @@ export default function Header({
             </>
           }
         />
+        {actionContent}
+        </Flex>
         <Content component='p' ouiaId={ouiaId}>
           {paragraph}
         </Content>
