@@ -1,6 +1,6 @@
 import { appendSearchParams, type LightwellPackagesParams } from '../lightwellPackagesParams';
 
-export type LightwellDestinationKey = 'repositories' | 'repositoryPackages' | 'packageDetails';
+export type LightwellDestinationKey = 'repositories' | 'repositoryPackages' | 'packageDetails' | 'tokens';
 
 export type LightwellNavigationParams = {
   rootPath: string;
@@ -28,6 +28,7 @@ export const lightwellNavigationPaths: Record<LightwellDestinationKey, BuildLigh
   repositories: ({ rootPath }) => rootPath,
   repositoryPackages: ({ rootPath, repoSlug, packagesParams }) =>
     appendSearchParams(`${rootPath}/${repoSlug}`, packagesParams ?? { search: '', page: 1 }),
+  tokens: ({ rootPath }) => `${rootPath}/tokens`,
   packageDetails: ({ rootPath, repoSlug, packageName, groupId, packagesParams }) => {
     const path = groupId
       ? `${rootPath}/${repoSlug}/${encodeURIComponent(groupId)}/${encodeURIComponent(packageName!)}`

@@ -12,7 +12,7 @@ import {
   PaginationVariant,
   Stack,
 } from '@patternfly/react-core';
-import { CodeIcon, JavaIcon, PythonIcon } from '@patternfly/react-icons';
+import { CodeIcon, JavaIcon, KeyIcon, PythonIcon } from '@patternfly/react-icons';
 import { SkeletonTable } from '@patternfly/react-component-groups';
 import {
   Table,
@@ -158,6 +158,21 @@ const RepositoriesTable = () => {
         paragraph='Browse Lightwell repositories by ecosystem and security level.'
         showOpenSourceBadge={false}
       />
+      <Flex
+        justifyContent={{ default: 'justifyContentFlexEnd' }}
+        className={`${spacing.pxLg} ${spacing.pbSm}`}
+      >
+        <FlexItem>
+          <Button
+            variant='secondary'
+            icon={<KeyIcon />}
+            onClick={() => navigateTo('tokens')}
+            ouiaId='lightwell-manage-tokens-button'
+          >
+            Manage tokens
+          </Button>
+        </FlexItem>
+      </Flex>
       <PageSection hasBodyWrapper={false} className={`${spacing.pt_0} ${spacing.pb_2xl}`}>
         <Grid data-ouia-component-id='lightwell-repositories-page'>
           <Hide hide={countIsZero || count < 10}>
