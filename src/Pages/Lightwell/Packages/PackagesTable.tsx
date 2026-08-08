@@ -8,6 +8,7 @@ import {
   FlexItem,
   Grid,
   Icon,
+  Label,
   Pagination,
   PaginationVariant,
   SearchInput,
@@ -94,6 +95,7 @@ type MappedPackage = {
   versions: string[];
   latest_releases: MappedRelease[];
   last_updated: string;
+  novel_fix: boolean;
 };
 
 const mapRepositoryPackage = (pkg: RepositoryPackageItem): MappedPackage => {
@@ -125,6 +127,7 @@ const mapRepositoryPackage = (pkg: RepositoryPackageItem): MappedPackage => {
       release: release.release,
     })),
     last_updated: latestCreatedAt ?? '',
+    novel_fix: !!pkg.novel_fix,
   };
 };
 
@@ -417,7 +420,7 @@ const PackagesTable = () => {
                     </Thead>
                     <Tbody>
                       {packages.map((pkg) => {
-                        const { name, group_id, versions, latest_releases, last_updated } = pkg;
+                        const { name, group_id, versions, latest_releases, last_updated, novel_fix } = pkg;
                         const packageKey = `${group_id}-${name}`;
                         const isCollapsed = !expandedPackages.has(packageKey);
 
@@ -433,22 +436,27 @@ const PackagesTable = () => {
                         return (
                           <Tr key={packageKey}>
                             <Td>
-                              <Button
-                                variant='link'
-                                isInline
-                                className={text.fontWeightBold}
-                                ouiaId={`lightwell-package-${name}`}
-                                onClick={() =>
-                                  navigateTo('packageDetails', {
-                                    repoSlug,
-                                    packageName: name,
-                                    groupId: isMaven ? group_id : undefined,
-                                    packagesParams,
-                                  })
-                                }
-                              >
-                                {isMaven ? `${group_id}:${name}` : name}
-                              </Button>
+                              <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
+                                <Button
+                                  variant='link'
+                                  isInline
+                                  className={text.fontWeightBold}
+                                  ouiaId={`lightwell-package-${name}`}
+                                  onClick={() =>
+                                    navigateTo('packageDetails', {
+                                      repoSlug,
+                                      packageName: name,
+                                      groupId: isMaven ? group_id : undefined,
+                                      packagesParams,
+                                    })
+                                  }
+                                >
+                                  {isMaven ? `${group_id}:${name}` : name}
+                                </Button>
+                                {novel_fix && (
+                                  <Label isCompact color='green'>Novel Fix</Label>
+                                )}
+                              </Flex>
                             </Td>
                             <Td>
                               <StackedItemsCell

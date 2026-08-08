@@ -243,6 +243,7 @@ export interface RepositoryPackageItem {
   name: string;
   versions: string[];
   latest_releases: RepositoryPackageReleaseInfo[];
+  novel_fix?: boolean;
 }
 
 export type RepositoryPackagesResponse = {

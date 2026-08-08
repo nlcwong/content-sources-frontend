@@ -163,6 +163,12 @@ const PackageDetails = () => {
     return sortVersionsDesc(versions.map(stripLightwellVersionSuffix));
   }, [useMock, repoUUID, packageName, pythonVersionsFromApi]);
 
+  const novelFix = useMemo(() => {
+    if (!useMock) return false;
+    const pkg = getMockLightwellPackages(repoUUID).find((p) => p.name === packageName);
+    return !!pkg?.novel_fix;
+  }, [useMock, repoUUID, packageName]);
+
   // TODO: Derive Python hasRelease from its versions API when remediated support is added
   const hasRelease = isMaven ? mavenHasRelease : false;
 
@@ -316,6 +322,11 @@ const PackageDetails = () => {
                     {isMaven ? `${packageGroup}:${packageName}` : packageName || 'Package details'}
                   </Title>
                 </FlexItem>
+                {novelFix && (
+                  <FlexItem>
+                    <Label isCompact color='green'>Novel Fix</Label>
+                  </FlexItem>
+                )}
                 {versionOptions.length === 1 && (selectedVersion || activeVersion) ? (
                   <FlexItem>
                     <Label variant='outline' style={{ fontSize: '14px', padding: '8px 16px' }}>

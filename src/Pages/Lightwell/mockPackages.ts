@@ -15,6 +15,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
         { version: '2.32.5', release: 'rhlw-3001', created_at: '2026-07-01T00:00:00Z' },
         { version: '2.32.6', release: 'rhlw-3002', created_at: '2026-07-01T00:00:00Z' },
       ],
+      novel_fix: true,
     },
     {
       name: 'python-urllib3',
@@ -39,6 +40,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: 'org.json',
       versions: ['3.15.0'],
       latest_releases: [{ version: '3.15.0', release: '', created_at: '2026-07-01T00:00:00Z' }],
+      novel_fix: true,
     },
     {
       name: 'httpclient',
@@ -54,6 +56,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
         { version: '33.3.0', release: '', created_at: '2026-06-20T00:00:00Z' },
         { version: '33.2.0', release: '', created_at: '2026-05-15T00:00:00Z' },
       ],
+      novel_fix: true,
     },
     {
       name: 'commons-lang3',
@@ -78,6 +81,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
         { version: '2.18.0', release: '', created_at: '2026-07-05T00:00:00Z' },
         { version: '2.17.2', release: '', created_at: '2026-04-20T00:00:00Z' },
       ],
+      novel_fix: true,
     },
     {
       name: 'logback-classic',
@@ -99,6 +103,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
         { version: '2.3', release: '', created_at: '2026-06-08T00:00:00Z' },
         { version: '2.2', release: '', created_at: '2026-03-15T00:00:00Z' },
       ],
+      novel_fix: true,
     },
   ],
 
@@ -111,6 +116,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       latest_releases: [
         { version: '20220815.0.0', release: 'rhlw-00001', created_at: '2026-07-01T00:00:00Z' },
       ],
+      novel_fix: true,
     },
     {
       name: 'json-path',
@@ -139,6 +145,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
         { version: '2.24.1', release: 'rhlw-00002', created_at: '2026-06-28T00:00:00Z' },
         { version: '2.24.1', release: 'rhlw-00001', created_at: '2026-06-15T00:00:00Z' },
       ],
+      novel_fix: true,
     },
     {
       name: 'commons-text',
@@ -156,6 +163,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       latest_releases: [
         { version: '6.2.1', release: 'rhlw-00002', created_at: '2026-07-05T00:00:00Z' },
       ],
+      novel_fix: true,
     },
     {
       name: 'xstream',
@@ -197,6 +205,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
         { version: '4.1.115', release: 'rhlw-00002', created_at: '2026-07-12T00:00:00Z' },
         { version: '4.1.114', release: 'rhlw-00002', created_at: '2026-06-15T00:00:00Z' },
       ],
+      novel_fix: true,
     },
   ],
 
@@ -219,6 +228,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
         { version: '43.0.1', release: '', created_at: '2026-07-01T00:00:00Z' },
         { version: '42.0.9', release: '', created_at: '2026-06-10T00:00:00Z' },
       ],
+      novel_fix: true,
     },
     {
       name: 'pyyaml',
@@ -249,6 +259,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
         { version: '2.9.1', release: '', created_at: '2026-07-05T00:00:00Z' },
         { version: '2.8.3', release: '', created_at: '2026-05-30T00:00:00Z' },
       ],
+      novel_fix: true,
     },
     {
       name: 'boto3',
@@ -270,6 +281,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: '',
       versions: ['2024.8.15'],
       latest_releases: [{ version: '2024.8.15', release: '', created_at: '2026-07-04T00:00:00Z' }],
+      novel_fix: true,
     },
     {
       name: 'pillow',
