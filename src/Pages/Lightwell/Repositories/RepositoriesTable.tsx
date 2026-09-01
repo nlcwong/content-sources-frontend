@@ -25,7 +25,7 @@ import {
   Tr,
   type BaseCellProps,
 } from '@patternfly/react-table';
-import { type ComponentProps, useState } from 'react';
+import { type ComponentProps, useMemo, useState } from 'react';
 import { createUseStyles } from 'react-jss';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import text from '@patternfly/react-styles/css/utilities/Text/text';
@@ -52,7 +52,9 @@ import {
   formatRepositoryName,
   getRepositoryPathSlug,
   getSlugFromRepositoryName,
+  getTableSortParams,
 } from '../helpers';
+import LastActivityCell from '../components/LastActivityCell';
 import ConnectRepositoryModal from './components/ConnectRepositoryModal';
 import { capitalize } from 'lodash';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
@@ -76,6 +78,8 @@ const useStyles = createUseStyles({
   },
 });
 
+const LAST_ACTIVITY_COLUMN_INDEX = 5;
+
 const RepositoriesTable = () => {
   const classes = useStyles();
   const isDemo = useLightwellDemo();
@@ -83,25 +87,43 @@ const RepositoriesTable = () => {
   const [page, setPage] = useState(1);
   const storedPerPage = Number(localStorage.getItem(lightwellReposPerPageKey)) || 20;
   const [perPage, setPerPage] = useState(storedPerPage);
+  const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined);
+  const [activeSortDirection, setActiveSortDirection] = useState<'asc' | 'desc' | undefined>(
+    undefined,
+  );
   const filters: FilterData = {
     feature_name: isDemo ? LIGHTWELL_DEMO_FEATURE_NAME : LIGHTWELL_FEATURE_NAME,
   };
 
   const useMock = LIGHTWELL_USE_MOCK;
 
+  const sortString = useMemo(() => {
+    if (activeSortIndex !== LAST_ACTIVITY_COLUMN_INDEX || !activeSortDirection) {
+      return '';
+    }
+    return `last_introspection_time:${activeSortDirection}`;
+  }, [activeSortIndex, activeSortDirection]);
+
   const mockRepositoryListQuery = useQuery({
-    queryKey: ['lightwell-repositories-mock', page, perPage, filters, isDemo],
+    queryKey: ['lightwell-repositories-mock', page, perPage, filters, isDemo, sortString],
     queryFn: () =>
       isDemo
-        ? getDemoLightwellRepositoryList(page, perPage, filters)
-        : getMockLightwellRepositoryList(page, perPage, filters),
+        ? getDemoLightwellRepositoryList(page, perPage, filters, sortString)
+        : getMockLightwellRepositoryList(page, perPage, filters, sortString),
     placeholderData: keepPreviousData,
     staleTime: 20000,
     enabled: useMock,
   });
 
   // Fetch repositories with the lightwell-network feature
-  const apiRepositoryListQuery = useContentListQuery(page, perPage, filters, '', [], !useMock);
+  const apiRepositoryListQuery = useContentListQuery(
+    page,
+    perPage,
+    filters,
+    sortString,
+    [],
+    !useMock,
+  );
 
   const {
     isLoading,
@@ -140,6 +162,7 @@ const RepositoriesTable = () => {
     title: string;
     width?: BaseCellProps['width'];
     info?: ComponentProps<typeof Th>['info'];
+    sortable?: boolean;
   }[] = [
     { title: 'Repository' },
     { title: 'Ecosystem', width: 15 },
@@ -156,6 +179,7 @@ const RepositoriesTable = () => {
         tooltip: 'Total package versions available in this repository.',
       },
     },
+    { title: 'Last activity', width: 15, sortable: true },
     ...(showNotificationsColumn
       ? [
           {
@@ -248,8 +272,26 @@ const RepositoriesTable = () => {
                   >
                     <Thead>
                       <Tr>
-                        {columnHeaders.map(({ title, width, info }) => (
-                          <Th key={title + 'column'} width={width} modifier='wrap' info={info}>
+                        {columnHeaders.map(({ title, width, info, sortable }, columnIndex) => (
+                          <Th
+                            key={title + 'column'}
+                            width={width}
+                            modifier='wrap'
+                            info={info}
+                            sort={
+                              sortable
+                                ? getTableSortParams(
+                                    columnIndex,
+                                    activeSortIndex,
+                                    activeSortDirection,
+                                    (index, direction) => {
+                                      setActiveSortIndex(index);
+                                      setActiveSortDirection(direction);
+                                    },
+                                  )
+                                : undefined
+                            }
+                          >
                             {info ? <span>{title}</span> : title}
                           </Th>
                         ))}
@@ -265,6 +307,7 @@ const RepositoriesTable = () => {
                           security_level,
                           package_count,
                           version_count,
+                          last_introspection_time,
                         } = repo;
 
                         const eventType = getRepositoryPathSlug(content_type, security_level);
@@ -342,6 +385,9 @@ const RepositoriesTable = () => {
                             </Td>
                             <Td dataLabel={columnHeaders[4].title}>
                               {version_count?.toLocaleString() ?? '0'}
+                            </Td>
+                            <Td dataLabel={columnHeaders[5].title}>
+                              <LastActivityCell timestamp={last_introspection_time} />
                             </Td>
                             {showNotificationsColumn ? (
                               <Td>

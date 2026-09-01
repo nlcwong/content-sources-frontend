@@ -17,16 +17,12 @@ import {
   Toolbar,
   ToolbarContent,
   ToolbarItem,
-  Timestamp,
 } from '@patternfly/react-core';
 import { CodeIcon, JavaIcon, PythonIcon } from '@patternfly/react-icons';
 import { SkeletonTable } from '@patternfly/react-component-groups';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import text from '@patternfly/react-styles/css/utilities/Text/text';
 import { createUseStyles } from 'react-jss';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-dayjs.extend(relativeTime);
 import { useMemo, useState, type ReactNode } from 'react';
 import { useParams } from 'react-router-dom';
 import {
@@ -45,11 +41,15 @@ import { RepositoryPackageItem } from 'services/Content/ContentApi';
 import { getMockLightwellPackages } from '../mockPackages';
 import {
   compareReleasesDesc,
+  compareTimestampsDesc,
   formatDistributionUrl,
   formatRepositoryName,
+  getPackageLastActivity,
   getRepositoryDescription,
+  getTableSortParams,
   sortVersionsDesc,
 } from '../helpers';
+import LastActivityCell from '../components/LastActivityCell';
 import Hide from 'components/Hide/Hide';
 import { LIGHTWELL_USE_MOCK, lightwellPkgsPerPageKey } from '../constants';
 import EmptyTableState from 'components/EmptyTableState/EmptyTableState';
@@ -98,11 +98,6 @@ type MappedPackage = {
 };
 
 const mapRepositoryPackage = (pkg: RepositoryPackageItem): MappedPackage => {
-  const latestCreatedAt = pkg.latest_releases
-    .map((release) => release.created_at)
-    .sort()
-    .at(-1);
-
   const sortedReleases = [...pkg.latest_releases].sort(compareReleasesDesc);
 
   const seenVersions = new Set<string>();
@@ -125,7 +120,7 @@ const mapRepositoryPackage = (pkg: RepositoryPackageItem): MappedPackage => {
       version: release.version,
       release: release.release,
     })),
-    last_updated: latestCreatedAt ?? '',
+    last_updated: getPackageLastActivity(pkg),
   };
 };
 
@@ -202,6 +197,10 @@ const PackagesTable = () => {
   const [perPage, setPerPage] = useState(storedPerPage);
 
   const [expandedPackages, setExpandedPackages] = useState<Set<string>>(new Set());
+  const [activeSortIndex, setActiveSortIndex] = useState<number | undefined>(undefined);
+  const [activeSortDirection, setActiveSortDirection] = useState<'asc' | 'desc' | undefined>(
+    undefined,
+  );
   const useMock = LIGHTWELL_USE_MOCK;
 
   const {
@@ -226,22 +225,51 @@ const PackagesTable = () => {
     isFetching: isPackagesFetching,
   } = apiPackagesQuery;
 
+  const showReleaseColumn =
+    repository?.security_level === 'remediated' ||
+    repository?.security_level === 'predisclosure';
+
   const { packages, packageCount } = useMemo(() => {
+    let mappedPackages: MappedPackage[];
+
     if (useMock) {
-      const mockPackages = getMockLightwellPackages(repoUUID, debouncedSearch);
+      mappedPackages = getMockLightwellPackages(repoUUID, debouncedSearch).map(mapRepositoryPackage);
+    } else {
+      const results = packagesData?.results ?? [];
+      mappedPackages = results.map(mapRepositoryPackage);
+    }
+
+    const lastActivityColumnIndex = showReleaseColumn ? 3 : 2;
+    if (activeSortIndex === lastActivityColumnIndex && activeSortDirection) {
+      mappedPackages = [...mappedPackages].sort((a, b) => {
+        const comparison = compareTimestampsDesc(a.last_updated, b.last_updated);
+        return activeSortDirection === 'asc' ? -comparison : comparison;
+      });
+    }
+
+    if (useMock) {
       const offset = (page - 1) * perPage;
       return {
-        packages: mockPackages.slice(offset, offset + perPage).map(mapRepositoryPackage),
-        packageCount: mockPackages.length,
+        packages: mappedPackages.slice(offset, offset + perPage),
+        packageCount: mappedPackages.length,
       };
     }
 
-    const results = packagesData?.results ?? [];
     return {
-      packages: results.map(mapRepositoryPackage),
+      packages: mappedPackages,
       packageCount: packagesData?.total ?? 0,
     };
-  }, [useMock, repoUUID, debouncedSearch, page, perPage, packagesData]);
+  }, [
+    useMock,
+    repoUUID,
+    debouncedSearch,
+    page,
+    perPage,
+    packagesData,
+    activeSortIndex,
+    activeSortDirection,
+    showReleaseColumn,
+  ]);
 
   const fetchingOrLoading = useMock ? false : isPackagesLoading || isPackagesFetching;
   const countIsZero = packageCount === 0;
@@ -293,18 +321,19 @@ const PackagesTable = () => {
   );
   const isRemediated = repository.security_level === 'remediated';
   const isPredisclosure = repository.security_level === 'predisclosure';
-  const showReleaseColumn = isRemediated || isPredisclosure;
   const isMaven = repository.content_type === 'maven';
   const isPython = repository.content_type === 'python';
 
-  const columnHeaders: { title: string; width?: BaseCellProps['width'] }[] = [
+  const columnHeaders: { title: string; width?: BaseCellProps['width']; sortable?: boolean }[] = [
     { title: 'Package', width: 25 },
     { title: 'Version', width: 15 },
     ...(showReleaseColumn
       ? [{ title: 'Latest release', width: 20 as BaseCellProps['width'] }]
       : []),
-    { title: 'Last updated', width: 15 },
+    { title: 'Last activity', width: 15, sortable: true },
   ];
+
+  const lastActivityColumnIndex = showReleaseColumn ? 3 : 2;
 
   return (
     <>
@@ -418,8 +447,25 @@ const PackagesTable = () => {
                   >
                     <Thead>
                       <Tr>
-                        {columnHeaders.map(({ title, width }) => (
-                          <Th key={title + 'column'} width={width} modifier='wrap'>
+                        {columnHeaders.map(({ title, width, sortable }, columnIndex) => (
+                          <Th
+                            key={title + 'column'}
+                            width={width}
+                            modifier='wrap'
+                            sort={
+                              sortable
+                                ? getTableSortParams(
+                                    columnIndex,
+                                    activeSortIndex,
+                                    activeSortDirection,
+                                    (index, direction) => {
+                                      setActiveSortIndex(index);
+                                      setActiveSortDirection(direction);
+                                    },
+                                  )
+                                : undefined
+                            }
+                          >
                             {title}
                           </Th>
                         ))}
@@ -488,20 +534,8 @@ const PackagesTable = () => {
                                 />
                               </Td>
                             ) : null}
-                            <Td dataLabel={columnHeaders[showReleaseColumn ? 3 : 2].title}>
-                              {last_updated ? (
-                                <Timestamp
-                                  date={new Date(last_updated)}
-                                  dateFormat='medium'
-                                  timeFormat='short'
-                                  tooltip={{ variant: 'default' }}
-                                  style={{ fontSize: 'inherit', textDecoration: 'none' }}
-                                >
-                                  {dayjs(last_updated).fromNow()}
-                                </Timestamp>
-                              ) : (
-                                '—'
-                              )}
+                            <Td dataLabel={columnHeaders[lastActivityColumnIndex].title}>
+                              <LastActivityCell timestamp={last_updated} />
                             </Td>
                           </Tr>
                         );

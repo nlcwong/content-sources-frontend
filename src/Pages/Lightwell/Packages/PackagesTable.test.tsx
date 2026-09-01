@@ -163,6 +163,7 @@ it('renders with a single package', async () => {
   renderPackagesTable();
 
   expect(screen.queryAllByText('Java Validated')).toHaveLength(2);
+  expect(await screen.findByText('Last activity')).toBeInTheDocument();
   expect(
     await screen.findByText('https://example.com/lightwell/java/validated'),
   ).toBeInTheDocument();

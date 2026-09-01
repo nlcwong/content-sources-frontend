@@ -100,7 +100,12 @@ it('renders with a single repository', async () => {
   (useContentListQuery as jest.Mock).mockImplementation(() => ({
     isLoading: false,
     data: {
-      data: [defaultLightwellContentItem],
+      data: [
+        {
+          ...defaultLightwellContentItem,
+          last_introspection_time: '2026-07-01T00:00:00Z',
+        },
+      ],
       meta: { count: 1, limit: 20, offset: 0 },
     },
   }));
@@ -108,6 +113,7 @@ it('renders with a single repository', async () => {
   renderRepositoriesTable();
 
   expect(await screen.findByText('Java Validated')).toBeInTheDocument();
+  expect(await screen.findByText('Last activity')).toBeInTheDocument();
   expect(
     await screen.findByText(
       'Maven artifacts rebuilt from source by Red Hat. Verified end-to-end with no modifications.',
@@ -116,6 +122,35 @@ it('renders with a single repository', async () => {
   expect(await screen.findByText('Java')).toBeInTheDocument();
   expect(await screen.findByText('1')).toBeInTheDocument();
   expect(await screen.findByText('3')).toBeInTheDocument();
+});
+
+it('passes last activity sort to the repositories query', async () => {
+  const user = userEvent.setup();
+  (useContentListQuery as jest.Mock).mockImplementation(() => ({
+    isLoading: false,
+    data: {
+      data: [
+        {
+          ...defaultLightwellContentItem,
+          last_introspection_time: '2026-07-01T00:00:00Z',
+        },
+      ],
+      meta: { count: 1, limit: 20, offset: 0 },
+    },
+  }));
+
+  renderRepositoriesTable();
+
+  await user.click(await screen.findByRole('button', { name: 'Last activity' }));
+
+  expect(useContentListQuery).toHaveBeenLastCalledWith(
+    1,
+    20,
+    expect.objectContaining({ feature_name: expect.any(String) }),
+    'last_introspection_time:desc',
+    [],
+    true,
+  );
 });
 
 it('shows a loading skeleton while repositories are loading', () => {

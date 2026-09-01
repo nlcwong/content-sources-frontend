@@ -1,4 +1,5 @@
 import { capitalize } from 'lodash';
+import type { ThProps } from '@patternfly/react-table';
 import { CONTENT_TYPE_PARAMETERS, LIGHTWELL_ORIGIN, REPOSITORY_DESCRIPTIONS } from './constants';
 import { RepositoryPackageItem } from 'services/Content/ContentApi';
 
@@ -148,3 +149,41 @@ export const formatDistributionUrl = (url: string): string =>
   url
     .replace('/api/pulp-content/public-lightwell-demo', '/lightwell/public-lightwell-demo')
     .replace('/api/pulp-content/lightwell', '/lightwell');
+
+export const getPackageLastActivity = (pkg: RepositoryPackageItem): string => {
+  const latestCreatedAt = pkg.latest_releases
+    .map((release) => release.created_at)
+    .filter(Boolean)
+    .sort()
+    .at(-1);
+
+  return latestCreatedAt ?? '';
+};
+
+export const compareTimestampsDesc = (a: string, b: string): number => {
+  if (!a && !b) return 0;
+  if (!a) return 1;
+  if (!b) return -1;
+
+  return new Date(b).getTime() - new Date(a).getTime();
+};
+
+export const compareTimestampsAsc = (a: string, b: string): number => -compareTimestampsDesc(a, b);
+
+export const getTableSortParams = (
+  columnIndex: number,
+  activeSortIndex: number | undefined,
+  activeSortDirection: 'asc' | 'desc' | undefined,
+  onSort: (index: number, direction: 'asc' | 'desc') => void,
+  defaultDirection: 'asc' | 'desc' = 'desc',
+): ThProps['sort'] => ({
+  sortBy: {
+    index: activeSortIndex,
+    direction: activeSortDirection,
+    defaultDirection,
+  },
+  onSort: (_event, index, direction) => {
+    onSort(index, direction);
+  },
+  columnIndex,
+});

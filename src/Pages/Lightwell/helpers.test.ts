@@ -1,9 +1,12 @@
 import {
   compareReleasesDesc,
+  compareTimestampsAsc,
+  compareTimestampsDesc,
   compareVersionsDesc,
   formatDistributionUrl,
   formatRepositoryName,
   getEcosystemFromContentType,
+  getPackageLastActivity,
   getRepositoryDescription,
   getRepositoryNameFromPathSlug,
   getRepositoryPathSlug,
@@ -241,5 +244,53 @@ describe('formatDistributionUrl', () => {
     expect(formatDistributionUrl('https://example.com/some/other/path')).toBe(
       'https://example.com/some/other/path',
     );
+  });
+});
+
+describe('getPackageLastActivity', () => {
+  it('returns the latest created_at from package releases', () => {
+    expect(
+      getPackageLastActivity({
+        group: 'org.json',
+        name: 'json',
+        versions: ['1.0.0'],
+        latest_releases: [
+          { version: '1.0.0', release: 'rhlw-0001', created_at: '2026-06-01T00:00:00Z' },
+          { version: '1.0.0', release: 'rhlw-0002', created_at: '2026-07-01T00:00:00Z' },
+        ],
+      }),
+    ).toBe('2026-07-01T00:00:00Z');
+  });
+
+  it('returns empty string when no releases exist', () => {
+    expect(
+      getPackageLastActivity({
+        group: '',
+        name: 'requests',
+        versions: ['2.0.0'],
+        latest_releases: [],
+      }),
+    ).toBe('');
+  });
+});
+
+describe('compareTimestampsDesc', () => {
+  it('sorts newer timestamps before older timestamps', () => {
+    expect(compareTimestampsDesc('2026-07-01T00:00:00Z', '2026-06-01T00:00:00Z')).toBeLessThan(0);
+    expect(compareTimestampsDesc('2026-06-01T00:00:00Z', '2026-07-01T00:00:00Z')).toBeGreaterThan(
+      0,
+    );
+  });
+
+  it('places empty timestamps after populated timestamps', () => {
+    expect(compareTimestampsDesc('', '2026-07-01T00:00:00Z')).toBeGreaterThan(0);
+    expect(compareTimestampsDesc('2026-07-01T00:00:00Z', '')).toBeLessThan(0);
+  });
+});
+
+describe('compareTimestampsAsc', () => {
+  it('sorts older timestamps before newer timestamps', () => {
+    expect(compareTimestampsAsc('2026-07-01T00:00:00Z', '2026-06-01T00:00:00Z')).toBeGreaterThan(0);
+    expect(compareTimestampsAsc('2026-06-01T00:00:00Z', '2026-07-01T00:00:00Z')).toBeLessThan(0);
   });
 });

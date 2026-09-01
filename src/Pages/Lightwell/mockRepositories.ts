@@ -1,6 +1,6 @@
 import { ContentItem, ContentListResponse, FilterData } from 'services/Content/ContentApi';
 
-import { getRepositoryPathSlug, getRepositoryDescription } from './helpers';
+import { getRepositoryPathSlug, getRepositoryDescription, compareTimestampsDesc } from './helpers';
 
 const mockRepositories = [
   {
@@ -14,6 +14,7 @@ const mockRepositories = [
     package_count: 10,
     build_count: 24,
     version_count: 24,
+    last_introspection_time: '2026-08-28T14:30:00Z',
   },
   {
     uuid: '22222222-2222-4222-8222-222222222222',
@@ -26,6 +27,7 @@ const mockRepositories = [
     package_count: 11,
     build_count: 28,
     version_count: 28,
+    last_introspection_time: '2026-08-30T09:15:00Z',
   },
   {
     uuid: '33333333-3333-4333-8333-333333333333',
@@ -38,6 +40,7 @@ const mockRepositories = [
     package_count: 13,
     build_count: 31,
     version_count: 31,
+    last_introspection_time: '2026-08-25T18:45:00Z',
   },
   {
     uuid: '44444444-4444-4444-8444-444444444444',
@@ -50,6 +53,7 @@ const mockRepositories = [
     package_count: 10,
     build_count: 22,
     version_count: 22,
+    last_introspection_time: '2026-08-20T11:00:00Z',
   },
   {
     uuid: '55555555-5555-4555-8555-555555555555',
@@ -62,6 +66,7 @@ const mockRepositories = [
     package_count: 8,
     build_count: 18,
     version_count: 18,
+    last_introspection_time: '2026-08-22T16:20:00Z',
   },
 ] as ContentItem[];
 
@@ -87,6 +92,7 @@ const buildMockRepositoryList = (
   page: number,
   perPage: number,
   filters: FilterData,
+  sortBy = '',
 ): ContentListResponse => {
   const search = (filters.search ?? '').trim().toLowerCase();
 
@@ -94,6 +100,17 @@ const buildMockRepositoryList = (
 
   if (search) {
     filtered = filtered.filter((repo) => repo.name.toLowerCase().includes(search));
+  }
+
+  if (sortBy.startsWith('last_introspection_time:')) {
+    const direction = sortBy.split(':')[1];
+    filtered = [...filtered].sort((a, b) => {
+      const comparison = compareTimestampsDesc(
+        a.last_introspection_time,
+        b.last_introspection_time,
+      );
+      return direction === 'asc' ? -comparison : comparison;
+    });
   }
 
   const offset = (page - 1) * perPage;
@@ -114,10 +131,12 @@ export const getMockLightwellRepositoryList = (
   page: number,
   perPage: number,
   filters: FilterData,
-): ContentListResponse => buildMockRepositoryList(mockRepositories, page, perPage, filters);
+  sortBy = '',
+): ContentListResponse => buildMockRepositoryList(mockRepositories, page, perPage, filters, sortBy);
 
 export const getDemoLightwellRepositoryList = (
   page: number,
   perPage: number,
   filters: FilterData,
-): ContentListResponse => buildMockRepositoryList(demoRepositories, page, perPage, filters);
+  sortBy = '',
+): ContentListResponse => buildMockRepositoryList(demoRepositories, page, perPage, filters, sortBy);
