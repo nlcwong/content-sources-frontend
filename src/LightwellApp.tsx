@@ -14,6 +14,7 @@ import RepositoriesTable from 'Pages/Lightwell/Repositories/RepositoriesTable';
 import Beacon from 'Pages/Lightwell/Beacon/Beacon';
 import CoverageAnalyzer from 'Pages/Lightwell/Coverage/CoverageAnalyzer';
 import LightwellNotFound from 'Pages/Lightwell/components/LightwellNotFound';
+import LightwellWireframeBanner from 'Pages/Lightwell/components/LightwellWireframeBanner';
 import { LightwellDemoLayout } from 'Pages/Lightwell/LightwellDemoContext';
 import { useAppContext } from './middleware/AppContext';
 
@@ -32,7 +33,9 @@ export default function LightwellApp() {
       {isFetchingPermissions ? (
         <Loader />
       ) : (
-        <Routes>
+        <>
+          <LightwellWireframeBanner />
+          <Routes>
           <Route path='demo' element={<LightwellDemoLayout />}>
             <Route index element={<RepositoriesTable />} />
             <Route path=':repoName/:group/:packageName' element={<PackageDetails />} />
@@ -50,7 +53,8 @@ export default function LightwellApp() {
           <Route path=':repoName/:packageName' element={<PackageDetails />} />
           <Route path=':repoName' element={<PackagesTable />} />
           <Route path='*' element={<LightwellNotFound />} />
-        </Routes>
+          </Routes>
+        </>
       )}
     </ErrorPage>
   );

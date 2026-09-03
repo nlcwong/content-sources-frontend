@@ -1,8 +1,19 @@
 import {
+  ContentItem,
   MavenPackageVersionsListResponse,
   PythonPackageVersionsResponse,
   RepositoryPackageItem,
 } from 'services/Content/ContentApi';
+import dayjs from 'dayjs';
+
+import {
+  buildCrossRepoPackageReleaseStats,
+  type PackageReleaseStat,
+} from './helpers';
+
+const demoYesterday = () =>
+  dayjs().subtract(1, 'day').hour(10).minute(0).second(0).millisecond(0).toISOString();
+const demoToday = () => dayjs().hour(8).minute(0).second(0).millisecond(0).toISOString();
 
 const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
   // Python Remediated
@@ -12,8 +23,8 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: '',
       versions: ['2.32.5', '2.32.6'],
       latest_releases: [
-        { version: '2.32.5', release: 'rhlw-3001', created_at: '2026-07-01T00:00:00Z' },
-        { version: '2.32.6', release: 'rhlw-3002', created_at: '2026-07-01T00:00:00Z' },
+        { version: '2.32.5', release: 'rhlw-3001', created_at: demoYesterday() },
+        { version: '2.32.6', release: 'rhlw-3002', created_at: demoToday() },
       ],
     },
     {
@@ -21,7 +32,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: '',
       versions: ['2.2.3'],
       latest_releases: [
-        { version: '2.2.3', release: 'rhlw-3002', created_at: '2026-07-01T00:00:00Z' },
+        { version: '2.2.3', release: 'rhlw-3002', created_at: demoYesterday() },
       ],
     },
   ],
@@ -32,13 +43,13 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       name: 'commons-fileupload',
       group: 'commons-fileupload',
       versions: ['2.17.2'],
-      latest_releases: [{ version: '2.17.2', release: '', created_at: '2026-07-01T00:00:00Z' }],
+      latest_releases: [{ version: '2.17.2', release: '', created_at: demoYesterday() }],
     },
     {
       name: 'json',
       group: 'org.json',
       versions: ['3.15.0'],
-      latest_releases: [{ version: '3.15.0', release: '', created_at: '2026-07-01T00:00:00Z' }],
+      latest_releases: [{ version: '3.15.0', release: '', created_at: demoYesterday() }],
     },
     {
       name: 'httpclient',
@@ -75,7 +86,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: 'com.fasterxml.jackson.core',
       versions: ['2.18.0', '2.17.2'],
       latest_releases: [
-        { version: '2.18.0', release: '', created_at: '2026-07-05T00:00:00Z' },
+        { version: '2.18.0', release: '', created_at: demoToday() },
         { version: '2.17.2', release: '', created_at: '2026-04-20T00:00:00Z' },
       ],
     },
@@ -109,7 +120,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: 'org.json',
       versions: ['20220815.0.0'],
       latest_releases: [
-        { version: '20220815.0.0', release: 'rhlw-00001', created_at: '2026-07-01T00:00:00Z' },
+        { version: '20220815.0.0', release: 'rhlw-00001', created_at: demoYesterday() },
       ],
     },
     {
@@ -117,8 +128,8 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: 'com.jayway.jsonpath',
       versions: ['2.9.0', '2.8.1'],
       latest_releases: [
-        { version: '2.9.0', release: 'rhlw-00001', created_at: '2026-07-01T00:00:00Z' },
-        { version: '2.8.1', release: 'rhlw-00001', created_at: '2026-07-01T00:00:00Z' },
+        { version: '2.9.0', release: 'rhlw-00001', created_at: demoYesterday() },
+        { version: '2.8.1', release: 'rhlw-00001', created_at: demoToday() },
       ],
     },
     {
@@ -135,7 +146,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: 'org.apache.logging.log4j',
       versions: ['2.24.1'],
       latest_releases: [
-        { version: '2.24.1', release: 'rhlw-00003', created_at: '2026-07-10T00:00:00Z' },
+        { version: '2.24.1', release: 'rhlw-00003', created_at: demoYesterday() },
         { version: '2.24.1', release: 'rhlw-00002', created_at: '2026-06-28T00:00:00Z' },
         { version: '2.24.1', release: 'rhlw-00001', created_at: '2026-06-15T00:00:00Z' },
       ],
@@ -216,7 +227,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: '',
       versions: ['43.0.1', '42.0.9'],
       latest_releases: [
-        { version: '43.0.1', release: '', created_at: '2026-07-01T00:00:00Z' },
+        { version: '43.0.1', release: '', created_at: demoYesterday() },
         { version: '42.0.9', release: '', created_at: '2026-06-10T00:00:00Z' },
       ],
     },
@@ -246,7 +257,7 @@ const mockPackagesByRepository: Record<string, RepositoryPackageItem[]> = {
       group: '',
       versions: ['2.9.1', '2.8.3'],
       latest_releases: [
-        { version: '2.9.1', release: '', created_at: '2026-07-05T00:00:00Z' },
+        { version: '2.9.1', release: '', created_at: demoToday() },
         { version: '2.8.3', release: '', created_at: '2026-05-30T00:00:00Z' },
       ],
     },
@@ -306,6 +317,17 @@ export const getMockLightwellRepositoryPackageCounts = (
   repoUuids: string[],
 ): Record<string, number> =>
   Object.fromEntries(repoUuids.map((uuid) => [uuid, getMockLightwellPackages(uuid).length]));
+
+export const getMockCrossRepoPackageReleaseStats = (
+  repositories: ContentItem[],
+  days = 1,
+): PackageReleaseStat[] => {
+  const packagesByRepoUuid = Object.fromEntries(
+    repositories.map((repo) => [repo.uuid, getMockLightwellPackages(repo.uuid)]),
+  );
+
+  return buildCrossRepoPackageReleaseStats(repositories, packagesByRepoUuid, days);
+};
 
 const mavenValidatedDetail = (
   group: string,

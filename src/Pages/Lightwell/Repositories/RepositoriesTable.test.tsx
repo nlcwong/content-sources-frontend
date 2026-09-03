@@ -14,10 +14,15 @@ import { getSlugFromRepositoryName } from '../helpers';
 import { useLightwellNotificationPrefs } from './hooks/useLightwellNotificationPrefs';
 import { useLightwellNavigateTo } from '../../../Hooks/Lightwell/navigation/useLightwellNavigateTo';
 import { useLightwellRepoNotifications } from './hooks/useLightwellRepoNotifications';
+import { useRepositoryInsightsDeck } from './hooks/useRepositoryInsightsDeck';
 
 jest.mock('services/Content/ContentQueries', () => ({
   useContentListQuery: jest.fn(),
   useLightwellRepositoryPackageCountsQuery: jest.fn(),
+}));
+
+jest.mock('./hooks/useRepositoryInsightsDeck', () => ({
+  useRepositoryInsightsDeck: jest.fn(),
 }));
 
 const mockNavigateTo = jest.fn();
@@ -62,6 +67,18 @@ const javaPredisclosureContentItem: ContentItem = {
   version_count: 18,
 };
 
+const emptyRecentActivitySummary = {
+  repositories: 0,
+  packages: 0,
+  releases: 0,
+};
+
+const emptyTopRecentPackagesBySecurityLevel = {
+  validated: [],
+  remediated: [],
+  predisclosure: [],
+};
+
 const renderRepositoriesTable = () =>
   render(
     <ReactQueryTestWrapper>
@@ -86,6 +103,177 @@ beforeEach(() => {
     isError: false,
     pendingEventType: undefined,
   });
+  (useRepositoryInsightsDeck as jest.Mock).mockReturnValue({
+    recentActivitySummary: emptyRecentActivitySummary,
+    topRecentPackagesBySecurityLevel: emptyTopRecentPackagesBySecurityLevel,
+    cveFixesBySeverity: { critical: 0, important: 0, moderate: 0 },
+    isLoading: false,
+    isError: false,
+  });
+});
+
+it('renders repository insights deck with recent activity summary panel', async () => {
+  (useRepositoryInsightsDeck as jest.Mock).mockReturnValue({
+    recentActivitySummary: {
+      repositories: 3,
+      packages: 12,
+      releases: 18,
+    },
+    topRecentPackagesBySecurityLevel: emptyTopRecentPackagesBySecurityLevel,
+    cveFixesBySeverity: { critical: 0, important: 0, moderate: 0 },
+    isLoading: false,
+    isError: false,
+  });
+  (useContentListQuery as jest.Mock).mockImplementation(() => ({
+    isLoading: false,
+    data: {
+      data: [defaultLightwellContentItem],
+      meta: { count: 1, limit: 20, offset: 0 },
+    },
+  }));
+
+  renderRepositoriesTable();
+
+  const deck = await screen.findByRole('region', { name: 'Repository insights statistics' });
+
+  expect(await screen.findByText('Repository insights')).toBeInTheDocument();
+  expect(within(deck).getByText('Release activity in the past 7 days')).toBeInTheDocument();
+  expect(within(deck).getByText('Repositories')).toBeInTheDocument();
+  expect(within(deck).getByText('Packages')).toBeInTheDocument();
+  expect(within(deck).getByText('Releases')).toBeInTheDocument();
+  expect(within(deck).getByText('3')).toBeInTheDocument();
+  expect(within(deck).getByText('12')).toBeInTheDocument();
+  expect(within(deck).getByText('18')).toBeInTheDocument();
+});
+
+it('renders repository insights deck with security-level panel', async () => {
+  const user = userEvent.setup();
+  (useRepositoryInsightsDeck as jest.Mock).mockReturnValue({
+    recentActivitySummary: emptyRecentActivitySummary,
+    topRecentPackagesBySecurityLevel: {
+      validated: [
+        {
+          packageKey: 'validated-pkg',
+          packageName: 'org.json:json',
+          repositoryUuid: defaultLightwellContentItem.uuid,
+          repositoryName: defaultLightwellContentItem.name,
+          releaseCount: 2,
+          securityLevel: 'validated',
+        },
+      ],
+      remediated: [],
+      predisclosure: [],
+    },
+    cveFixesBySeverity: { critical: 0, important: 0, moderate: 0 },
+    isLoading: false,
+    isError: false,
+  });
+  (useContentListQuery as jest.Mock).mockImplementation(() => ({
+    isLoading: false,
+    data: {
+      data: [defaultLightwellContentItem],
+      meta: { count: 1, limit: 20, offset: 0 },
+    },
+  }));
+
+  renderRepositoriesTable();
+
+  await user.click(await screen.findByRole('button', { name: 'Next' }));
+
+  expect(
+    await screen.findByText('Top packages released in the past 7 days by repository type'),
+  ).toBeInTheDocument();
+  expect(screen.getByText('org.json:json')).toBeInTheDocument();
+  expect(screen.getAllByRole('columnheader', { name: 'Releases' }).length).toBeGreaterThan(0);
+});
+
+it('renders security-level split panel in insights deck', async () => {
+  const user = userEvent.setup();
+  (useRepositoryInsightsDeck as jest.Mock).mockReturnValue({
+    recentActivitySummary: emptyRecentActivitySummary,
+    topRecentPackagesBySecurityLevel: {
+      validated: [
+        {
+          packageKey: 'validated-pkg',
+          packageName: 'org.json:json',
+          repositoryUuid: defaultLightwellContentItem.uuid,
+          repositoryName: defaultLightwellContentItem.name,
+          releaseCount: 2,
+          securityLevel: 'validated',
+        },
+      ],
+      remediated: [
+        {
+          packageKey: 'remediated-pkg',
+          packageName: 'org.apache.logging.log4j:log4j-core',
+          repositoryUuid: javaRemediatedContentItem.uuid,
+          repositoryName: javaRemediatedContentItem.name,
+          releaseCount: 1,
+          securityLevel: 'remediated',
+        },
+      ],
+      predisclosure: [
+        {
+          packageKey: 'predisclosure-pkg',
+          packageName: 'com.example:secret-fix',
+          repositoryUuid: javaPredisclosureContentItem.uuid,
+          repositoryName: javaPredisclosureContentItem.name,
+          releaseCount: 1,
+          securityLevel: 'predisclosure',
+        },
+      ],
+    },
+    cveFixesBySeverity: { critical: 0, important: 0, moderate: 0 },
+    isLoading: false,
+    isError: false,
+  });
+  (useContentListQuery as jest.Mock).mockImplementation(() => ({
+    isLoading: false,
+    data: {
+      data: [defaultLightwellContentItem],
+      meta: { count: 1, limit: 20, offset: 0 },
+    },
+  }));
+
+  renderRepositoriesTable();
+
+  await user.click(await screen.findByRole('button', { name: 'Next' }));
+
+  expect(
+    await screen.findByText('Top packages released in the past 7 days by repository type'),
+  ).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Validated' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Remediated' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Predisclosure' })).toBeInTheDocument();
+  expect(screen.getByText('org.json:json')).toBeInTheDocument();
+  expect(screen.getByText('org.apache.logging.log4j:log4j-core')).toBeInTheDocument();
+  expect(screen.getByText('com.example:secret-fix')).toBeInTheDocument();
+});
+
+it('advances insights deck to the CVE fixes panel', async () => {
+  const user = userEvent.setup();
+  (useRepositoryInsightsDeck as jest.Mock).mockReturnValue({
+    recentActivitySummary: emptyRecentActivitySummary,
+    topRecentPackagesBySecurityLevel: emptyTopRecentPackagesBySecurityLevel,
+    cveFixesBySeverity: { critical: 2, important: 5, moderate: 3 },
+    isLoading: false,
+    isError: false,
+  });
+  (useContentListQuery as jest.Mock).mockImplementation(() => ({
+    isLoading: false,
+    data: {
+      data: [defaultLightwellContentItem],
+      meta: { count: 1, limit: 20, offset: 0 },
+    },
+  }));
+
+  renderRepositoriesTable();
+
+  await user.click(await screen.findByRole('button', { name: 'Next' }));
+  await user.click(await screen.findByRole('button', { name: 'Next' }));
+
+  expect(await screen.findByText('CVEs fixed in the past 7 days')).toBeInTheDocument();
+  expect(screen.getByText('Critical')).toBeInTheDocument();
 });
 
 it('shows empty state when there are no repositories', async () => {
@@ -251,8 +439,13 @@ it('renders validated and remediated security level labels', async () => {
 
   renderRepositoriesTable();
 
-  expect(await screen.findByText('Validated')).toBeInTheDocument();
-  expect(screen.getByText('Remediated')).toBeInTheDocument();
+  expect(await screen.findByRole('columnheader', { name: 'Ecosystem' })).toBeInTheDocument();
+  const repositoriesTable = screen
+    .getAllByRole('grid')
+    .find((table) => within(table).queryByRole('columnheader', { name: 'Ecosystem' }))!;
+
+  expect(within(repositoriesTable).getByText('Validated')).toBeInTheDocument();
+  expect(within(repositoriesTable).getByText('Remediated')).toBeInTheDocument();
 });
 
 it('renders repository table column headers', async () => {
@@ -266,11 +459,11 @@ it('renders repository table column headers', async () => {
 
   renderRepositoriesTable();
 
-  expect(await screen.findByRole('columnheader', { name: 'Repository' })).toBeInTheDocument();
-  expect(screen.getByRole('columnheader', { name: 'Ecosystem' })).toBeInTheDocument();
+  expect(await screen.findByRole('columnheader', { name: 'Ecosystem' })).toBeInTheDocument();
   expect(screen.getByRole('columnheader', { name: 'Security level' })).toBeInTheDocument();
   expect(screen.getByRole('columnheader', { name: 'Packages' })).toBeInTheDocument();
   expect(screen.getByRole('columnheader', { name: 'Versions' })).toBeInTheDocument();
+  expect(screen.getByRole('columnheader', { name: 'Last activity' })).toBeInTheDocument();
 });
 
 it('hides notification features when the feature flag is off', async () => {
@@ -393,8 +586,13 @@ it('renders java predisclosure repository', async () => {
 
   renderRepositoriesTable();
 
+  expect(await screen.findByRole('columnheader', { name: 'Ecosystem' })).toBeInTheDocument();
+  const repositoriesTable = screen
+    .getAllByRole('grid')
+    .find((table) => within(table).queryByRole('columnheader', { name: 'Ecosystem' }))!;
+
   expect(await screen.findByText('Java Predisclosure')).toBeInTheDocument();
-  expect(screen.getByText('Predisclosure')).toBeInTheDocument();
+  expect(within(repositoriesTable).getByText('Predisclosure')).toBeInTheDocument();
 });
 
 it('does not show notification toggle for predisclosure repositories', async () => {

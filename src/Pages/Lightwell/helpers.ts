@@ -1,7 +1,34 @@
 import { capitalize } from 'lodash';
+import dayjs from 'dayjs';
 import type { ThProps } from '@patternfly/react-table';
 import { CONTENT_TYPE_PARAMETERS, LIGHTWELL_ORIGIN, REPOSITORY_DESCRIPTIONS } from './constants';
-import { RepositoryPackageItem } from 'services/Content/ContentApi';
+import { ContentItem, RepositoryPackageItem } from 'services/Content/ContentApi';
+
+export type PackageReleaseStat = {
+  packageKey: string;
+  packageName: string;
+  repositoryUuid: string;
+  repositoryName: string;
+  releaseCount: number;
+  securityLevel?: string;
+};
+
+export type TopPackagesBySecurityLevel = {
+  validated: PackageReleaseStat[];
+  remediated: PackageReleaseStat[];
+  predisclosure: PackageReleaseStat[];
+};
+
+export type RecentActivitySummary = {
+  repositories: number;
+  packages: number;
+  releases: number;
+};
+
+const SECURITY_LEVELS = ['validated', 'remediated', 'predisclosure'] as const;
+
+export const getPackageKey = (group: string, name: string, repositoryUuid: string): string =>
+  `${repositoryUuid}:${group}:${name}`;
 
 const getContentTypeParameters = (contentType?: string) => {
   const normalized = contentType?.toLowerCase();
@@ -169,6 +196,96 @@ export const compareTimestampsDesc = (a: string, b: string): number => {
 };
 
 export const compareTimestampsAsc = (a: string, b: string): number => -compareTimestampsDesc(a, b);
+
+export const formatRepositoryShortName = (name: string): string => name.replace(/^lightwell\//, '');
+
+export const isWithinLastDays = (timestamp: string, days: number): boolean => {
+  if (!timestamp) {
+    return false;
+  }
+
+  const createdAt = dayjs(timestamp);
+  if (!createdAt.isValid()) {
+    return false;
+  }
+
+  const cutoff = dayjs().subtract(days, 'day').startOf('day');
+  return createdAt.isSame(cutoff) || createdAt.isAfter(cutoff);
+};
+
+export const isWithinLastDay = (timestamp: string): boolean => isWithinLastDays(timestamp, 1);
+
+export const formatPackageDisplayName = (group: string, name: string): string =>
+  group ? `${group}:${name}` : name;
+
+export const countPackageReleasesInWindow = (
+  pkg: RepositoryPackageItem,
+  days = 1,
+): number =>
+  pkg.latest_releases.filter((release) => isWithinLastDays(release.created_at, days)).length;
+
+export const buildCrossRepoPackageReleaseStats = (
+  repositories: ContentItem[],
+  packagesByRepoUuid: Record<string, RepositoryPackageItem[]>,
+  days = 1,
+): PackageReleaseStat[] =>
+  repositories.flatMap((repo) =>
+    (packagesByRepoUuid[repo.uuid] ?? []).map((pkg) => ({
+      packageKey: getPackageKey(pkg.group, pkg.name, repo.uuid),
+      packageName: formatPackageDisplayName(pkg.group, pkg.name),
+      repositoryUuid: repo.uuid,
+      repositoryName: repo.name,
+      releaseCount: countPackageReleasesInWindow(pkg, days),
+      securityLevel: repo.security_level,
+    })),
+  );
+
+export const getTopPackagesBySecurityLevel = (
+  stats: PackageReleaseStat[],
+  limit = 10,
+): TopPackagesBySecurityLevel =>
+  SECURITY_LEVELS.reduce<TopPackagesBySecurityLevel>(
+    (grouped, level) => ({
+      ...grouped,
+      [level]: getTopPackagesByRecentReleases(
+        stats.filter((stat) => stat.securityLevel === level),
+        limit,
+      ),
+    }),
+    { validated: [], remediated: [], predisclosure: [] },
+  );
+
+export const getTopPackagesByRecentReleases = (
+  stats: PackageReleaseStat[],
+  limit = 10,
+): PackageReleaseStat[] =>
+  [...stats]
+    .filter((stat) => stat.releaseCount > 0)
+    .sort((a, b) => {
+      const countDiff = b.releaseCount - a.releaseCount;
+      if (countDiff !== 0) {
+        return countDiff;
+      }
+      return a.packageName.localeCompare(b.packageName);
+    })
+    .slice(0, limit);
+
+export const buildRecentActivitySummary = (
+  stats: PackageReleaseStat[],
+): RecentActivitySummary => {
+  const activeStats = stats.filter((stat) => stat.releaseCount > 0);
+
+  return {
+    repositories: new Set(activeStats.map((stat) => stat.repositoryUuid)).size,
+    packages: activeStats.length,
+    releases: activeStats.reduce((total, stat) => total + stat.releaseCount, 0),
+  };
+};
+
+export const countRecentReleases = (packages: RepositoryPackageItem[], days = 7): number =>
+  packages
+    .flatMap((pkg) => pkg.latest_releases)
+    .filter((release) => isWithinLastDays(release.created_at, days)).length;
 
 export const getTableSortParams = (
   columnIndex: number,

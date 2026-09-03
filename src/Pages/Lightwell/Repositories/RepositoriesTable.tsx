@@ -11,6 +11,7 @@ import {
   Pagination,
   PaginationVariant,
   Stack,
+  StackItem,
   Switch,
 } from '@patternfly/react-core';
 import { CodeIcon, JavaIcon, PythonIcon, BellIcon } from '@patternfly/react-icons';
@@ -31,6 +32,7 @@ import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import text from '@patternfly/react-styles/css/utilities/Text/text';
 
 import EmptyTableState from './components/EmptyTableState';
+import RepositoryInsightsDeck from './components/RepositoryInsightsDeck';
 import Hide from 'components/Hide/Hide';
 import { FilterData } from 'services/Content/ContentApi';
 import { useContentListQuery } from 'services/Content/ContentQueries';
@@ -66,6 +68,7 @@ import {
   mapSeveritiesToApi,
   useLightwellRepoNotifications,
 } from './hooks/useLightwellRepoNotifications';
+import { useRepositoryInsightsDeck } from './hooks/useRepositoryInsightsDeck';
 
 const useStyles = createUseStyles({
   topContainer: {
@@ -140,6 +143,13 @@ const RepositoriesTable = () => {
   if (isError) throw error;
 
   const countIsZero = count === 0; // Empty list signals missing Lightwell entitlement
+
+  const {
+    recentActivitySummary,
+    topRecentPackagesBySecurityLevel,
+    cveFixesBySeverity,
+    isLoading: isInsightsDeckLoading,
+  } = useRepositoryInsightsDeck({ isDemo });
 
   const {
     prefs,
@@ -262,10 +272,19 @@ const RepositoriesTable = () => {
             </Stack>
           </Hide>
           <Hide hide={countIsZero || isLoading}>
-            <Stack>
-              <Card className={`${spacing.ptLg} ${spacing.pb_2xl} ${spacing.pxLg}`}>
-                <Stack>
-                  <Table
+            <Stack hasGutter>
+              <StackItem>
+                <RepositoryInsightsDeck
+                  recentActivitySummary={recentActivitySummary}
+                  topRecentPackagesBySecurityLevel={topRecentPackagesBySecurityLevel}
+                  cveFixesBySeverity={cveFixesBySeverity}
+                  isLoading={isInsightsDeckLoading}
+                />
+              </StackItem>
+              <StackItem>
+                <Card className={`${spacing.ptLg} ${spacing.pb_2xl} ${spacing.pxLg}`}>
+                  <Stack>
+                    <Table
                     aria-label='Lightwell repositories table'
                     ouiaId='lightwell-repositories-table'
                     isStriped
@@ -427,6 +446,7 @@ const RepositoriesTable = () => {
                   </Hide>
                 </Stack>
               </Card>
+              </StackItem>
             </Stack>
           </Hide>
           <Hide hide={!countIsZero || isLoading}>

@@ -3,13 +3,21 @@ import {
   compareTimestampsAsc,
   compareTimestampsDesc,
   compareVersionsDesc,
+  countRecentReleases,
   formatDistributionUrl,
+  formatPackageDisplayName,
   formatRepositoryName,
   getEcosystemFromContentType,
   getPackageLastActivity,
   getRepositoryDescription,
   getRepositoryNameFromPathSlug,
   getRepositoryPathSlug,
+  getTopPackagesByRecentReleases,
+  getTopPackagesBySecurityLevel,
+  buildCrossRepoPackageReleaseStats,
+  buildRecentActivitySummary,
+  isWithinLastDay,
+  isWithinLastDays,
   lightwellReleaseNum,
   sortVersionsDesc,
   stripLightwellVersionSuffix,
@@ -292,5 +300,328 @@ describe('compareTimestampsAsc', () => {
   it('sorts older timestamps before newer timestamps', () => {
     expect(compareTimestampsAsc('2026-07-01T00:00:00Z', '2026-06-01T00:00:00Z')).toBeGreaterThan(0);
     expect(compareTimestampsAsc('2026-06-01T00:00:00Z', '2026-07-01T00:00:00Z')).toBeLessThan(0);
+  });
+});
+
+describe('isWithinLastDays', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-09-01T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('returns true for timestamps within the window', () => {
+    expect(isWithinLastDays('2026-08-30T00:00:00Z', 7)).toBe(true);
+    expect(isWithinLastDays('2026-08-25T00:00:00Z', 7)).toBe(true);
+  });
+
+  it('returns false for timestamps outside the window', () => {
+    expect(isWithinLastDays('2026-08-24T23:59:59Z', 7)).toBe(false);
+    expect(isWithinLastDays('2026-07-01T00:00:00Z', 7)).toBe(false);
+  });
+
+  it('returns false for empty or invalid timestamps', () => {
+    expect(isWithinLastDays('', 7)).toBe(false);
+    expect(isWithinLastDays('not-a-date', 7)).toBe(false);
+  });
+});
+
+describe('countRecentReleases', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-09-01T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('counts release events within the window across packages', () => {
+    expect(
+      countRecentReleases([
+        {
+          group: 'org.json',
+          name: 'json',
+          versions: ['1.0.0'],
+          latest_releases: [
+            { version: '1.0.0', release: 'rhlw-0001', created_at: '2026-08-30T00:00:00Z' },
+            { version: '1.0.1', release: 'rhlw-0002', created_at: '2026-07-01T00:00:00Z' },
+          ],
+        },
+        {
+          group: 'org.apache.commons',
+          name: 'commons-lang3',
+          versions: ['3.15.0'],
+          latest_releases: [
+            { version: '3.15.0', release: '', created_at: '2026-08-28T00:00:00Z' },
+          ],
+        },
+      ]),
+    ).toBe(2);
+  });
+
+  it('returns zero when no releases are recent', () => {
+    expect(
+      countRecentReleases([
+        {
+          group: '',
+          name: 'requests',
+          versions: ['2.0.0'],
+          latest_releases: [
+            { version: '2.0.0', release: 'rhlw-0001', created_at: '2026-06-01T00:00:00Z' },
+          ],
+        },
+      ]),
+    ).toBe(0);
+  });
+});
+
+describe('isWithinLastDay', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-09-02T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('returns true for timestamps from yesterday', () => {
+    expect(isWithinLastDay('2026-09-01T10:00:00Z')).toBe(true);
+  });
+
+  it('returns false for timestamps older than one day', () => {
+    expect(isWithinLastDay('2026-08-30T00:00:00Z')).toBe(false);
+  });
+});
+
+describe('formatPackageDisplayName', () => {
+  it('formats maven packages with group prefix', () => {
+    expect(formatPackageDisplayName('org.json', 'json')).toBe('org.json:json');
+  });
+
+  it('returns name only for python packages', () => {
+    expect(formatPackageDisplayName('', 'requests')).toBe('requests');
+  });
+});
+
+describe('buildCrossRepoPackageReleaseStats', () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2026-09-02T12:00:00Z'));
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
+  });
+
+  it('aggregates release counts per package across repositories', () => {
+    const stats = buildCrossRepoPackageReleaseStats(
+      [
+        {
+          uuid: 'repo-1',
+          name: 'lightwell/java/validated',
+        } as never,
+      ],
+      {
+        'repo-1': [
+          {
+            group: 'org.json',
+            name: 'json',
+            versions: ['1.0.0'],
+            latest_releases: [
+              { version: '1.0.0', release: 'rhlw-0001', created_at: '2026-09-01T10:00:00Z' },
+              { version: '1.0.1', release: 'rhlw-0002', created_at: '2026-07-01T00:00:00Z' },
+            ],
+          },
+        ],
+      },
+      1,
+    );
+
+    expect(stats).toHaveLength(1);
+    expect(stats[0].releaseCount).toBe(1);
+    expect(stats[0].packageName).toBe('org.json:json');
+    expect(stats[0].securityLevel).toBeUndefined();
+  });
+
+  it('includes security level from repository metadata', () => {
+    const stats = buildCrossRepoPackageReleaseStats(
+      [
+        {
+          uuid: 'repo-1',
+          name: 'lightwell/java/validated',
+          security_level: 'validated',
+        } as never,
+      ],
+      {
+        'repo-1': [
+          {
+            group: 'org.json',
+            name: 'json',
+            versions: ['1.0.0'],
+            latest_releases: [
+              { version: '1.0.0', release: 'rhlw-0001', created_at: '2026-09-01T10:00:00Z' },
+            ],
+          },
+        ],
+      },
+      1,
+    );
+
+    expect(stats[0].securityLevel).toBe('validated');
+  });
+});
+
+describe('getTopPackagesByRecentReleases', () => {
+  it('returns top packages sorted by release count', () => {
+    const top = getTopPackagesByRecentReleases(
+      [
+        {
+          packageKey: 'a',
+          packageName: 'alpha',
+          repositoryUuid: '1',
+          repositoryName: 'lightwell/java/validated',
+          releaseCount: 1,
+        },
+        {
+          packageKey: 'b',
+          packageName: 'beta',
+          repositoryUuid: '1',
+          repositoryName: 'lightwell/java/remediated',
+          releaseCount: 3,
+        },
+        {
+          packageKey: 'c',
+          packageName: 'charlie',
+          repositoryUuid: '2',
+          repositoryName: 'lightwell/python/validated',
+          releaseCount: 0,
+        },
+      ],
+      2,
+    );
+
+    expect(top).toHaveLength(2);
+    expect(top[0].packageName).toBe('beta');
+    expect(top[1].packageName).toBe('alpha');
+  });
+});
+
+describe('getTopPackagesBySecurityLevel', () => {
+  const stats = [
+    {
+      packageKey: 'validated-a',
+      packageName: 'alpha',
+      repositoryUuid: '1',
+      repositoryName: 'lightwell/java/validated',
+      releaseCount: 2,
+      securityLevel: 'validated',
+    },
+    {
+      packageKey: 'validated-b',
+      packageName: 'beta',
+      repositoryUuid: '2',
+      repositoryName: 'lightwell/python/validated',
+      releaseCount: 1,
+      securityLevel: 'validated',
+    },
+    {
+      packageKey: 'remediated-a',
+      packageName: 'gamma',
+      repositoryUuid: '3',
+      repositoryName: 'lightwell/java/remediated',
+      releaseCount: 4,
+      securityLevel: 'remediated',
+    },
+    {
+      packageKey: 'predisclosure-a',
+      packageName: 'delta',
+      repositoryUuid: '4',
+      repositoryName: 'lightwell/java/predisclosure',
+      releaseCount: 1,
+      securityLevel: 'predisclosure',
+    },
+    {
+      packageKey: 'validated-c',
+      packageName: 'empty',
+      repositoryUuid: '1',
+      repositoryName: 'lightwell/java/validated',
+      releaseCount: 0,
+      securityLevel: 'validated',
+    },
+  ];
+
+  it('groups, sorts, limits, and excludes zero-release packages per security level', () => {
+    const grouped = getTopPackagesBySecurityLevel(stats, 1);
+
+    expect(grouped.validated).toHaveLength(1);
+    expect(grouped.validated[0].packageName).toBe('alpha');
+    expect(grouped.remediated).toHaveLength(1);
+    expect(grouped.remediated[0].packageName).toBe('gamma');
+    expect(grouped.predisclosure).toHaveLength(1);
+    expect(grouped.predisclosure[0].packageName).toBe('delta');
+  });
+});
+
+describe('buildRecentActivitySummary', () => {
+  it('deduplicates repositories and sums package and release counts', () => {
+    const summary = buildRecentActivitySummary([
+      {
+        packageKey: 'a',
+        packageName: 'alpha',
+        repositoryUuid: 'repo-1',
+        repositoryName: 'lightwell/java/validated',
+        releaseCount: 2,
+      },
+      {
+        packageKey: 'b',
+        packageName: 'beta',
+        repositoryUuid: 'repo-1',
+        repositoryName: 'lightwell/java/validated',
+        releaseCount: 1,
+      },
+      {
+        packageKey: 'c',
+        packageName: 'charlie',
+        repositoryUuid: 'repo-2',
+        repositoryName: 'lightwell/python/validated',
+        releaseCount: 3,
+      },
+      {
+        packageKey: 'd',
+        packageName: 'delta',
+        repositoryUuid: 'repo-3',
+        repositoryName: 'lightwell/java/remediated',
+        releaseCount: 0,
+      },
+    ]);
+
+    expect(summary).toEqual({
+      repositories: 2,
+      packages: 3,
+      releases: 6,
+    });
+  });
+
+  it('returns zero counts when there is no recent activity', () => {
+    expect(
+      buildRecentActivitySummary([
+        {
+          packageKey: 'a',
+          packageName: 'alpha',
+          repositoryUuid: 'repo-1',
+          repositoryName: 'lightwell/java/validated',
+          releaseCount: 0,
+        },
+      ]),
+    ).toEqual({
+      repositories: 0,
+      packages: 0,
+      releases: 0,
+    });
   });
 });
