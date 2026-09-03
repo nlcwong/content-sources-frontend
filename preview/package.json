@@ -1,0 +1,29 @@
+{
+  "name": "lightwell-insights-preview",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@patternfly/react-component-groups": "^6.5.0",
+    "@patternfly/react-core": "^6.3.1",
+    "@patternfly/react-icons": "^6.3.1",
+    "@patternfly/react-styles": "^6.3.1",
+    "@patternfly/react-table": "^6.3.1",
+    "dayjs": "^1.11.23",
+    "lodash": "^4.18.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/lodash": "^4.17.25",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.7.0",
+    "typescript": "^5.9.2",
+    "vite": "^6.3.5"
+  }
+}
