@@ -8,6 +8,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.19.0",
     "@patternfly/react-component-groups": "^6.5.0",
     "@patternfly/react-core": "^6.3.1",
     "@patternfly/react-icons": "^6.3.1",
