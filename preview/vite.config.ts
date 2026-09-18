@@ -23,14 +23,30 @@ export default defineConfig({
   base: process.env.GITHUB_PAGES === 'true' ? '/content-sources-frontend/' : '/',
   plugins: [react()],
   resolve: {
-    alias: {
-      ...packageAliases,
-      Pages: path.resolve(repoRoot, 'src/Pages'),
-      services: path.resolve(repoRoot, 'src/services'),
-      Hooks: path.resolve(repoRoot, 'src/Hooks'),
-      'Hooks/useErrorNotification': path.resolve(stubsDir, 'useErrorNotification.ts'),
-      'Hooks/useNotification': path.resolve(stubsDir, 'useNotification.ts'),
-    },
+    // Specific stubs must win over broader path prefixes.
+    alias: [
+      {
+        find: 'Hooks/useErrorNotification',
+        replacement: path.resolve(stubsDir, 'useErrorNotification.ts'),
+      },
+      {
+        find: 'Hooks/useNotification',
+        replacement: path.resolve(stubsDir, 'useNotification.ts'),
+      },
+      {
+        find: 'services/Lightwell/UserPreferencesQueries',
+        replacement: path.resolve(stubsDir, 'UserPreferencesQueries.ts'),
+      },
+      {
+        find: 'Pages',
+        replacement: path.resolve(repoRoot, 'src/Pages'),
+      },
+      {
+        find: 'services',
+        replacement: path.resolve(repoRoot, 'src/services'),
+      },
+      ...Object.entries(packageAliases).map(([find, replacement]) => ({ find, replacement })),
+    ],
   },
   server: {
     fs: {
