@@ -1,0 +1,52 @@
+name: Deploy Lightwell ack preview
+
+on:
+  push:
+    branches:
+      - feature/lightwell-first-access-ack
+    paths:
+      - 'preview/**'
+      - 'src/Pages/Lightwell/Acknowledgement/**'
+      - 'src/Pages/Lightwell/hooks/useLightwellContentAck.tsx'
+      - 'src/Pages/Lightwell/constants.ts'
+      - 'src/services/Lightwell/UserPreferencesApi.ts'
+      - 'src/services/Lightwell/UserPreferencesQueries.ts'
+      - '.github/workflows/lightwell-ack-preview-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lightwell-ack-preview-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: preview/package-lock.json
+
+      - name: Install and build preview
+        working-directory: preview
+        env:
+          GITHUB_PAGES: 'true'
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./preview/dist
+          publish_branch: gh-pages
+          commit_message: 'Deploy Lightwell acknowledgement preview'
