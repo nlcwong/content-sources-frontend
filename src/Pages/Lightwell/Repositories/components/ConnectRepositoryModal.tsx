@@ -1,8 +1,11 @@
 import { Modal, ModalBody, ModalHeader, ModalVariant } from '@patternfly/react-core';
 import { cloneElement, ReactElement, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ContentItem } from 'services/Content/ContentApi';
 
+import { requireLightwellAck } from '../../helpers/requireLightwellAck';
+import { useLightwellContentAck } from '../../hooks/useLightwellContentAck';
 import ConnectRepositoryContent from './ConnectRepositoryContent';
 
 type ConnectRepositoryModalProps = {
@@ -12,6 +15,9 @@ type ConnectRepositoryModalProps = {
 
 const ConnectRepositoryModal = ({ repository, children }: ConnectRepositoryModalProps) => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { hasAcknowledged, isLoading: isAckLoading } = useLightwellContentAck();
 
   const openModal = () => setIsOpen(true);
   const closeModal = () => setIsOpen(false);
@@ -19,9 +25,22 @@ const ConnectRepositoryModal = ({ repository, children }: ConnectRepositoryModal
   const trigger = cloneElement(children, {
     onClick: (event: React.MouseEvent) => {
       children.props.onClick?.(event);
-      if (!event.defaultPrevented) {
-        openModal();
+      if (event.defaultPrevented) {
+        return;
       }
+
+      if (isAckLoading) {
+        event.preventDefault();
+        return;
+      }
+
+      if (!hasAcknowledged) {
+        event.preventDefault();
+        requireLightwellAck(navigate, `${location.pathname}${location.search}`);
+        return;
+      }
+
+      openModal();
     },
   });
 
@@ -31,7 +50,7 @@ const ConnectRepositoryModal = ({ repository, children }: ConnectRepositoryModal
       <Modal
         variant={ModalVariant.large}
         position='top'
-        isOpen={isOpen}
+        isOpen={isOpen && hasAcknowledged}
         onClose={closeModal}
         aria-labelledby='lightwell-connect-repository-modal-title'
         ouiaId='lightwell-connect-repository-modal'

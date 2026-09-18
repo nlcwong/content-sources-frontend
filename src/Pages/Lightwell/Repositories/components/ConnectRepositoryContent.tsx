@@ -13,9 +13,12 @@ import {
 import { ExternalLinkAltIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import { createRef, useEffect, useMemo, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 import { ContentItem } from 'services/Content/ContentApi';
 
+import { requireLightwellAck } from '../../helpers/requireLightwellAck';
+import { useLightwellContentAck } from '../../hooks/useLightwellContentAck';
 import { ConnectSnippetTab, getConnectSnippetTabs } from './connectSnippets';
 
 type ConnectRepositoryContentProps = {
@@ -69,6 +72,9 @@ const ConnectRepositoryContent = ({ repository }: ConnectRepositoryContentProps)
   const tabs = useMemo(() => getConnectSnippetTabs(repository), [repository]);
   const firstTabKey = tabs[0]?.eventKey ?? '';
   const [activeTabKey, setActiveTabKey] = useState(firstTabKey);
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { hasAcknowledged } = useLightwellContentAck();
 
   const tabRefs = useMemo(
     () =>
@@ -85,6 +91,15 @@ const ConnectRepositoryContent = ({ repository }: ConnectRepositoryContentProps)
   useEffect(() => {
     setActiveTabKey(firstTabKey);
   }, [firstTabKey, repository.uuid]);
+
+  const handleCreateServiceAccountClick = (event: React.MouseEvent) => {
+    if (hasAcknowledged) {
+      return;
+    }
+
+    event.preventDefault();
+    requireLightwellAck(navigate, `${location.pathname}${location.search}`);
+  };
 
   return (
     <Flex direction={{ default: 'column' }} gap={{ default: 'gapLg' }}>
@@ -104,6 +119,7 @@ const ConnectRepositoryContent = ({ repository }: ConnectRepositoryContentProps)
             icon={<ExternalLinkAltIcon />}
             iconPosition='end'
             style={{ fontWeight: 'bold' }}
+            onClick={handleCreateServiceAccountClick}
           >
             create a service account
           </Button>

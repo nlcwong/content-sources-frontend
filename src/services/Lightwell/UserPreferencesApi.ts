@@ -9,9 +9,15 @@ export type UserPreferencesResponse = UserPreference[];
 
 export const LIGHTWELL_NOTIFICATION_ENABLED_LABEL = 'lightwell-notification-enabled';
 export const LIGHTWELL_NOTIFICATION_MINIMUM_LABEL = 'lightwell-notification-minimum';
+export const LIGHTWELL_CONTENT_ACKNOWLEDGED_LABEL = 'lightwell-content-acknowledged';
 export const LIGHTWELL_NOTIFICATION_SEVERITIES = ['critical', 'high', 'medium', 'low'] as const;
 
 export type LightwellNotificationSeverity = (typeof LIGHTWELL_NOTIFICATION_SEVERITIES)[number];
+
+export type LightwellContentAckValue = {
+  acknowledged: boolean;
+  textVersion: string;
+};
 
 export const getUserPreferences = async (): Promise<UserPreferencesResponse> => {
   const { data } = await axios.get<UserPreferencesResponse>(

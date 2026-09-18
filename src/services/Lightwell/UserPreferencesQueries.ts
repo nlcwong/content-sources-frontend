@@ -6,8 +6,10 @@ import useNotification from 'Hooks/useNotification';
 
 import {
   getUserPreferences,
+  LIGHTWELL_CONTENT_ACKNOWLEDGED_LABEL,
   LIGHTWELL_NOTIFICATION_ENABLED_LABEL,
   LIGHTWELL_NOTIFICATION_MINIMUM_LABEL,
+  LightwellContentAckValue,
   LightwellNotificationSeverity,
   setUserPreference,
   UserPreference,
@@ -83,6 +85,55 @@ export const useSetUserPreferencesMutation = () => {
         'An error occurred',
         err,
         'set-user-preferences-error',
+      );
+    },
+  });
+};
+
+export const useSetLightwellContentAckMutation = () => {
+  const queryClient = useQueryClient();
+  const errorNotifier = useErrorNotification();
+
+  return useMutation({
+    mutationFn: async (value: LightwellContentAckValue) => {
+      await setUserPreference(LIGHTWELL_CONTENT_ACKNOWLEDGED_LABEL, JSON.stringify(value));
+    },
+    onMutate: async (value) => {
+      await queryClient.cancelQueries({ queryKey: [USER_PREFERENCES_KEY] });
+
+      const previousData = queryClient.getQueryData<UserPreferencesResponse>([
+        USER_PREFERENCES_KEY,
+      ]);
+
+      queryClient.setQueryData<UserPreferencesResponse>([USER_PREFERENCES_KEY], (current) => {
+        const next = [...(current ?? [])];
+        const preference = {
+          label: LIGHTWELL_CONTENT_ACKNOWLEDGED_LABEL,
+          value: JSON.stringify(value),
+        };
+        const index = next.findIndex(({ label }) => label === LIGHTWELL_CONTENT_ACKNOWLEDGED_LABEL);
+        if (index >= 0) {
+          next[index] = preference;
+        } else {
+          next.push(preference);
+        }
+        return next;
+      });
+
+      return { previousData };
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: [USER_PREFERENCES_KEY] });
+    },
+    onError: (err: unknown, _variables, context) => {
+      if (context?.previousData) {
+        queryClient.setQueryData([USER_PREFERENCES_KEY], context.previousData);
+      }
+      errorNotifier(
+        'Error saving Lightwell acknowledgement',
+        'An error occurred',
+        err,
+        'set-lightwell-content-ack-error',
       );
     },
   });

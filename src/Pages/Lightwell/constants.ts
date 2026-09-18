@@ -1,15 +1,19 @@
 import {
+  LIGHTWELL_CONTENT_ACKNOWLEDGED_LABEL,
   LIGHTWELL_NOTIFICATION_ENABLED_LABEL,
   LIGHTWELL_NOTIFICATION_MINIMUM_LABEL,
   LIGHTWELL_NOTIFICATION_SEVERITIES,
+  type LightwellContentAckValue,
   type LightwellNotificationSeverity,
 } from 'services/Lightwell/UserPreferencesApi';
 import type { NotificationSubscriptionType } from 'services/Notifications/NotificationsApi';
 
 export {
+  LIGHTWELL_CONTENT_ACKNOWLEDGED_LABEL,
   LIGHTWELL_NOTIFICATION_ENABLED_LABEL,
   LIGHTWELL_NOTIFICATION_MINIMUM_LABEL,
   LIGHTWELL_NOTIFICATION_SEVERITIES,
+  type LightwellContentAckValue,
   type LightwellNotificationSeverity,
 };
 
@@ -22,6 +26,16 @@ export const LIGHTWELL_ORIGIN = 'lightwell';
 export const LIGHTWELL_USE_MOCK = false;
 export const LIGHTWELL_LENS_USE_MOCK = false; // Set to true locally to skip file upload during dev
 export const LIGHTWELL_BEACON_USE_MOCK = false;
+
+/** Static identifier for the acknowledgement text; bump when Legal changes the copy. */
+export const LIGHTWELL_ACK_TEXT_VERSION = 'v1';
+
+export const LIGHTWELL_CONTENT_ACK_STORAGE_KEY = 'lightwell-content-acknowledged';
+
+export const ACKNOWLEDGED_LIGHTWELL_CONTENT: LightwellContentAckValue = {
+  acknowledged: true,
+  textVersion: LIGHTWELL_ACK_TEXT_VERSION,
+};
 
 export const lightwellReposPerPageKey = 'lightwellRepositoriesPerPage';
 export const lightwellPkgsPerPageKey = 'lightwellPackagesPerPage';

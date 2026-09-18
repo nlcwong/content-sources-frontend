@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 
 import RepositoriesTable from './RepositoriesTable';
 import { useContentListQuery } from 'services/Content/ContentQueries';
@@ -40,6 +41,18 @@ jest.mock('./hooks/useLightwellRepoNotifications', () => ({
   useLightwellRepoNotifications: jest.fn(),
 }));
 
+jest.mock('../hooks/useLightwellContentAck', () => ({
+  LightwellContentAckProvider: ({ children }: { children: React.ReactNode }) => children,
+  useLightwellContentAck: () => ({
+    hasAcknowledged: true,
+    isLoading: false,
+    isError: false,
+    isAcknowledging: false,
+    acknowledge: jest.fn(),
+    textVersion: 'v1',
+  }),
+}));
+
 const javaRemediatedContentItem: ContentItem = {
   ...defaultLightwellContentItem,
   name: 'lightwell/java/remediated',
@@ -65,7 +78,9 @@ const javaPredisclosureContentItem: ContentItem = {
 const renderRepositoriesTable = () =>
   render(
     <ReactQueryTestWrapper>
-      <RepositoriesTable />
+      <MemoryRouter>
+        <RepositoriesTable />
+      </MemoryRouter>
     </ReactQueryTestWrapper>,
   );
 

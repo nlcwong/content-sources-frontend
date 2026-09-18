@@ -54,6 +54,20 @@ let searchParams = new URLSearchParams();
 jest.mock('react-router-dom', () => ({
   useParams: () => mockUseParams(),
   useSearchParams: () => [searchParams],
+  useNavigate: () => jest.fn(),
+  useLocation: () => ({ pathname: '/', search: '', hash: '', state: null, key: 'test' }),
+}));
+
+jest.mock('../hooks/useLightwellContentAck', () => ({
+  LightwellContentAckProvider: ({ children }: { children: React.ReactNode }) => children,
+  useLightwellContentAck: () => ({
+    hasAcknowledged: true,
+    isLoading: false,
+    isError: false,
+    isAcknowledging: false,
+    acknowledge: jest.fn(),
+    textVersion: 'v1',
+  }),
 }));
 
 const mockNavigateTo = jest.fn();
