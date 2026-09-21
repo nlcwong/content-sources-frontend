@@ -1,5 +1,6 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 
 import Beacon from './Beacon';
 import { ReactQueryTestWrapper } from 'testingHelpers';
@@ -20,6 +21,12 @@ jest.mock('services/Lightwell/CustomerQueries', () => ({
 
 jest.mock('services/Lightwell/BeaconQueries', () => ({
   useLtwlsuptTicketIdsQuery: jest.fn(),
+}));
+
+jest.mock('Hooks/Lightwell/navigation/useLightwellNavigateTo', () => ({
+  useLightwellNavigateTo: () => ({
+    navigateTo: jest.fn(),
+  }),
 }));
 
 import { useBeaconData } from './hooks/useBeaconData';
@@ -44,7 +51,9 @@ const mockBeaconData = {
 const renderBeacon = () =>
   render(
     <ReactQueryTestWrapper>
-      <Beacon />
+      <MemoryRouter>
+        <Beacon />
+      </MemoryRouter>
     </ReactQueryTestWrapper>,
   );
 

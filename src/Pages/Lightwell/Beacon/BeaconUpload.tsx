@@ -4,6 +4,7 @@ import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 
 import LightwellPageHeader from '../components/LightwellPageHeader';
 import BeaconUploadCard from './components/BeaconUploadCard';
+import MySubmissionsTable from './components/MySubmissionsTable';
 import { useBeaconUpload } from './hooks/useBeaconUpload';
 
 const BeaconUpload = () => {
@@ -36,6 +37,9 @@ const BeaconUpload = () => {
         <Stack hasGutter style={{ maxWidth: 1200 }}>
           <StackItem>
             <BeaconUploadCard {...uploadProps} />
+          </StackItem>
+          <StackItem>
+            <MySubmissionsTable />
           </StackItem>
         </Stack>
       </PageSection>

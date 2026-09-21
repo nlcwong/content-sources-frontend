@@ -15,7 +15,6 @@ import Beacon from 'Pages/Lightwell/Beacon/Beacon';
 import BeaconUpload from 'Pages/Lightwell/Beacon/BeaconUpload';
 import CoverageAnalyzer from 'Pages/Lightwell/Coverage/CoverageAnalyzer';
 import LightwellNotFound from 'Pages/Lightwell/components/LightwellNotFound';
-import LightwellTopNav from 'Pages/Lightwell/components/LightwellTopNav';
 import { LightwellDemoLayout } from 'Pages/Lightwell/LightwellDemoContext';
 import { useAppContext } from './middleware/AppContext';
 
@@ -38,27 +37,24 @@ export default function LightwellApp() {
       {isFetchingPermissions ? (
         <Loader />
       ) : (
-        <>
-          <LightwellTopNav />
-          <Routes>
-            <Route path='demo' element={<LightwellDemoLayout />}>
-              <Route index element={<RepositoriesTable />} />
-              <Route path=':repoName/:group/:packageName' element={<PackageDetails />} />
-              <Route path=':repoName/:packageName' element={<PackageDetails />} />
-              <Route path=':repoName' element={<PackagesTable />} />
-            </Route>
+        <Routes>
+          <Route path='demo' element={<LightwellDemoLayout />}>
             <Route index element={<RepositoriesTable />} />
-            {beaconEnabled ? (
-              <Route path='beacon/upload' element={<BeaconUpload />} />
-            ) : null}
-            {beaconEnabled ? <Route path='beacon' element={<Beacon />} /> : null}
-            {lensEnabled ? <Route path='lens' element={<CoverageAnalyzer />} /> : null}
             <Route path=':repoName/:group/:packageName' element={<PackageDetails />} />
             <Route path=':repoName/:packageName' element={<PackageDetails />} />
             <Route path=':repoName' element={<PackagesTable />} />
-            <Route path='*' element={<LightwellNotFound />} />
-          </Routes>
-        </>
+          </Route>
+          <Route index element={<RepositoriesTable />} />
+          {beaconEnabled ? (
+            <Route path='beacon/upload' element={<BeaconUpload />} />
+          ) : null}
+          {beaconEnabled ? <Route path='beacon' element={<Beacon />} /> : null}
+          {lensEnabled ? <Route path='lens' element={<CoverageAnalyzer />} /> : null}
+          <Route path=':repoName/:group/:packageName' element={<PackageDetails />} />
+          <Route path=':repoName/:packageName' element={<PackageDetails />} />
+          <Route path=':repoName' element={<PackagesTable />} />
+          <Route path='*' element={<LightwellNotFound />} />
+        </Routes>
       )}
     </ErrorPage>
   );

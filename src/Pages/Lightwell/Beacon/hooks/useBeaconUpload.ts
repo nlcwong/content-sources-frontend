@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import type { MouseEventHandler } from 'react';
 
+import { addBeaconSubmission } from '../utils/beaconSubmissionsStore';
 import {
   BEACON_UPLOAD_MAX_FILE_SIZE_BYTES,
   BEACON_UPLOAD_MAX_FILE_SIZE_MB,
@@ -23,7 +24,7 @@ export type BeaconUploadCardProps = {
 
 /**
  * Mock Beacon vulnerability-file upload for LWLP-1269 prototypes.
- * No backend API is called; upload progress is simulated.
+ * Successful uploads are recorded in localStorage for submissions / STAM panels.
  */
 export const useBeaconUpload = () => {
   const [step, setStep] = useState<BeaconUploadStep>('select');
@@ -36,26 +37,37 @@ export const useBeaconUpload = () => {
     setProcessError(undefined);
   };
 
-  const handleFileAccepted = useCallback((acceptedFiles: File[]) => {
-    const selectedFile = acceptedFiles[0];
-    if (!selectedFile) return;
-
-    if (selectedFile.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES) {
-      setFile(selectedFile);
-      setFileError(
-        `File exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
-      );
-      return;
-    }
-
-    resetErrors();
-    setFile(selectedFile);
-    setStep('uploading');
-
-    window.setTimeout(() => {
-      setStep('complete');
-    }, MOCK_UPLOAD_DELAY_MS);
+  const completeUpload = useCallback((selectedFile: File) => {
+    addBeaconSubmission({
+      filename: selectedFile.name,
+      sizeBytes: selectedFile.size,
+    });
+    setStep('complete');
   }, []);
+
+  const handleFileAccepted = useCallback(
+    (acceptedFiles: File[]) => {
+      const selectedFile = acceptedFiles[0];
+      if (!selectedFile) return;
+
+      if (selectedFile.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES) {
+        setFile(selectedFile);
+        setFileError(
+          `File exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
+        );
+        return;
+      }
+
+      resetErrors();
+      setFile(selectedFile);
+      setStep('uploading');
+
+      window.setTimeout(() => {
+        completeUpload(selectedFile);
+      }, MOCK_UPLOAD_DELAY_MS);
+    },
+    [completeUpload],
+  );
 
   const handleClearFile: MouseEventHandler<HTMLButtonElement> = () => {
     setStep('select');
@@ -77,7 +89,7 @@ export const useBeaconUpload = () => {
     setProcessError(undefined);
     setStep('uploading');
     window.setTimeout(() => {
-      setStep('complete');
+      completeUpload(file);
     }, MOCK_UPLOAD_DELAY_MS);
   };
 

@@ -6,6 +6,7 @@ import { BEACON_UPLOAD_MAX_FILE_SIZE_BYTES } from '../uploadTypes';
 describe('useBeaconUpload', () => {
   beforeEach(() => {
     jest.useFakeTimers();
+    localStorage.clear();
   });
 
   afterEach(() => {
@@ -25,7 +26,7 @@ describe('useBeaconUpload', () => {
     expect(result.current.step).toBe('select');
   });
 
-  it('completes a mock upload for a valid file', () => {
+  it('completes a mock upload and records a submission', () => {
     const { result } = renderHook(() => useBeaconUpload());
     const file = new File(['cve,package'], 'vulns.csv', { type: 'text/csv' });
 
@@ -41,5 +42,10 @@ describe('useBeaconUpload', () => {
 
     expect(result.current.step).toBe('complete');
     expect(result.current.isComplete).toBe(true);
+    expect(JSON.parse(localStorage.getItem('lightwell-beacon-submissions') ?? '[]')).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ filename: 'vulns.csv', status: 'Received' }),
+      ]),
+    );
   });
 });
