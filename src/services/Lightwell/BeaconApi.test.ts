@@ -15,6 +15,7 @@ const baseVulnerability: LightwellVulnerabilityResponse = {
   component_name: 'log4j-core',
   package: 'log4j-core',
   component_version: '2.17.1',
+  published_versions: [],
   title: 'JNDI injection via crafted log message',
   cwe: 'CWE-917',
   description: 'Remote code execution through JNDI lookup in log messages',
@@ -24,8 +25,8 @@ const baseVulnerability: LightwellVulnerabilityResponse = {
   exploit_tested: true,
   reproducer_included: true,
   customer_priority: 'Priority 1',
-  stage: 'Submitted',
-  language: 'java',
+  status: 'Submitted',
+  ecosystem: 'java',
   submitted_date: '2026-08-16T00:00:00Z',
   last_updated: '2026-08-17T08:17:00Z',
   age_days: 2,
@@ -47,6 +48,7 @@ describe('mapLightwellVulnerability', () => {
       lastUpdated: '2026-08-17 08:17',
       ltwlsupt_ticket_ids: ['batch-2', 'batch-3'],
       ltwlsupt_ticket_id: 'batch-2',
+      publishedVersions: [],
     });
   });
 
@@ -57,6 +59,22 @@ describe('mapLightwellVulnerability', () => {
     });
 
     expect(mapped.severity).toBe('Minor');
+  });
+
+  it('maps published_versions and defaults a missing array to empty', () => {
+    expect(
+      mapLightwellVulnerability({
+        ...baseVulnerability,
+        published_versions: ['1.10.1.rhlw-00002', '1.10.0.rhlw-00001'],
+      }).publishedVersions,
+    ).toEqual(['1.10.1.rhlw-00002', '1.10.0.rhlw-00001']);
+
+    expect(
+      mapLightwellVulnerability({
+        ...baseVulnerability,
+        published_versions: undefined as unknown as string[],
+      }).publishedVersions,
+    ).toEqual([]);
   });
 });
 
@@ -87,7 +105,7 @@ describe('getVulnerabilities', () => {
       limit: 200,
       offset,
       critical_count: 0,
-      stage_counts: {},
+      status_counts: {},
     },
   });
 

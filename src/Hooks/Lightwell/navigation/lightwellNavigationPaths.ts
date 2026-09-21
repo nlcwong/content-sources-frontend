@@ -4,7 +4,6 @@ export type LightwellDestinationKey =
   | 'repositories'
   | 'repositoryPackages'
   | 'packageDetails'
-  | 'lens'
   | 'beacon'
   | 'beaconUpload';
 
@@ -32,7 +31,6 @@ type BuildLightwellPath = (params: LightwellNavigationParams) => string;
  */
 export const lightwellNavigationPaths: Record<LightwellDestinationKey, BuildLightwellPath> = {
   repositories: ({ rootPath }) => rootPath,
-  lens: ({ rootPath }) => `${rootPath}/lens`,
   beacon: ({ rootPath }) => `${rootPath}/beacon`,
   beaconUpload: ({ rootPath }) => `${rootPath}/beacon/upload`,
   repositoryPackages: ({ rootPath, repoSlug, packagesParams }) =>
@@ -44,4 +42,10 @@ export const lightwellNavigationPaths: Record<LightwellDestinationKey, BuildLigh
 
     return appendSearchParams(path, packagesParams ?? { search: '', page: 1 });
   },
+};
+
+export const lensNavigationPaths = {
+  lens: (rootPath: string) => `${rootPath}/lens`,
+  lensReport: (rootPath: string, reportUUID: string) =>
+    `${rootPath}/lens/${encodeURIComponent(reportUUID)}`,
 };

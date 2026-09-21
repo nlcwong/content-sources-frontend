@@ -19,6 +19,7 @@ const collection = {
       component_name: 'log4j-core',
       package: 'log4j-core',
       component_version: '2.17.1',
+      published_versions: ['1.10.0.rhlw-00001'],
       title: 'JNDI injection',
       cwe: 'CWE-917',
       description: 'RCE',
@@ -26,8 +27,8 @@ const collection = {
       cvss: 9.8,
       exploit_tested: true,
       reproducer_included: true,
-      stage: 'Submitted',
-      language: 'java',
+      status: 'Submitted',
+      ecosystem: 'java',
       submitted_date: '2026-08-16T00:00:00Z',
       last_updated: '2026-08-17T08:17:00Z',
       age_days: 2,
@@ -40,7 +41,7 @@ const collection = {
     limit: 50,
     offset: 0,
     critical_count: 1,
-    stage_counts: { Submitted: 1 },
+    status_counts: { Submitted: 1 },
   },
 };
 
@@ -66,10 +67,11 @@ describe('fetchData', () => {
       },
     });
     expect(result.vulnerabilities[0].vulnerabilityId).toBe('LWL-2026-4401');
+    expect(result.vulnerabilities[0].publishedVersions).toEqual(['1.10.0.rhlw-00001']);
     expect(result.meta).toEqual({
       count: 1,
       criticalCount: 1,
-      stageCounts: { Submitted: 1 },
+      statusCounts: { Submitted: 1 },
     });
   });
 
@@ -141,7 +143,7 @@ describe('buildBeaconPdfPayload', () => {
     expect(
       shouldUseLandscapePdf([
         { key: 'vulnerabilityId', title: 'Vulnerability ID' },
-        { key: 'stage', title: 'Status' },
+        { key: 'status', title: 'Status' },
       ]),
     ).toBe(false);
 
