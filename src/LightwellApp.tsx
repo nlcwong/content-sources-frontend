@@ -12,8 +12,10 @@ import PackagesTable from 'Pages/Lightwell/Packages/PackagesTable';
 import PackageDetails from 'Pages/Lightwell/Packages/PackageDetails';
 import RepositoriesTable from 'Pages/Lightwell/Repositories/RepositoriesTable';
 import Beacon from 'Pages/Lightwell/Beacon/Beacon';
+import BeaconUpload from 'Pages/Lightwell/Beacon/BeaconUpload';
 import CoverageAnalyzer from 'Pages/Lightwell/Coverage/CoverageAnalyzer';
 import LightwellNotFound from 'Pages/Lightwell/components/LightwellNotFound';
+import LightwellTopNav from 'Pages/Lightwell/components/LightwellTopNav';
 import { LightwellDemoLayout } from 'Pages/Lightwell/LightwellDemoContext';
 import { useAppContext } from './middleware/AppContext';
 
@@ -26,31 +28,37 @@ export default function LightwellApp() {
     hideGlobalFilter(true);
   }, [hideGlobalFilter]);
 
+  const beaconEnabled =
+    !!features?.lightwellbeacon?.enabled && !!features?.lightwellbeacon?.accessible;
+  const lensEnabled = !!features?.lightwelllens?.enabled && !!features?.lightwelllens?.accessible;
+
   return (
     <ErrorPage>
       <div data-ouia-safe={pageSafe} />
       {isFetchingPermissions ? (
         <Loader />
       ) : (
-        <Routes>
-          <Route path='demo' element={<LightwellDemoLayout />}>
+        <>
+          <LightwellTopNav />
+          <Routes>
+            <Route path='demo' element={<LightwellDemoLayout />}>
+              <Route index element={<RepositoriesTable />} />
+              <Route path=':repoName/:group/:packageName' element={<PackageDetails />} />
+              <Route path=':repoName/:packageName' element={<PackageDetails />} />
+              <Route path=':repoName' element={<PackagesTable />} />
+            </Route>
             <Route index element={<RepositoriesTable />} />
+            {beaconEnabled ? (
+              <Route path='beacon/upload' element={<BeaconUpload />} />
+            ) : null}
+            {beaconEnabled ? <Route path='beacon' element={<Beacon />} /> : null}
+            {lensEnabled ? <Route path='lens' element={<CoverageAnalyzer />} /> : null}
             <Route path=':repoName/:group/:packageName' element={<PackageDetails />} />
             <Route path=':repoName/:packageName' element={<PackageDetails />} />
             <Route path=':repoName' element={<PackagesTable />} />
-          </Route>
-          <Route index element={<RepositoriesTable />} />
-          {features?.lightwellbeacon?.enabled && features?.lightwellbeacon?.accessible ? (
-            <Route path='beacon' element={<Beacon />} />
-          ) : null}
-          {features?.lightwelllens?.enabled && features?.lightwelllens?.accessible ? (
-            <Route path='lens' element={<CoverageAnalyzer />} />
-          ) : null}
-          <Route path=':repoName/:group/:packageName' element={<PackageDetails />} />
-          <Route path=':repoName/:packageName' element={<PackageDetails />} />
-          <Route path=':repoName' element={<PackagesTable />} />
-          <Route path='*' element={<LightwellNotFound />} />
-        </Routes>
+            <Route path='*' element={<LightwellNotFound />} />
+          </Routes>
+        </>
       )}
     </ErrorPage>
   );
