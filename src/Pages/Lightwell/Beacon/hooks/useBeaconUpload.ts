@@ -1,12 +1,10 @@
 import { useCallback, useState } from 'react';
-import type { MouseEventHandler } from 'react';
 
 import { addBeaconSubmission } from '../utils/beaconSubmissionsStore';
 import {
   BEACON_UPLOAD_MAX_FILE_SIZE_BYTES,
   BEACON_UPLOAD_MAX_FILE_SIZE_MB,
   type BeaconUploadStep,
-  type BeaconUploadValidated,
 } from '../uploadTypes';
 
 const MOCK_UPLOAD_DELAY_MS = 1200;
@@ -16,15 +14,15 @@ export type BeaconUploadCardProps = {
   file?: File;
   fileError?: string;
   processError?: string;
-  validated: BeaconUploadValidated;
   onDropAccepted: (files: File[]) => void;
-  onClearClick: MouseEventHandler<HTMLButtonElement>;
   onRetry: () => void;
 };
 
 /**
  * Mock Beacon vulnerability-file upload for LWLP-1269 prototypes.
  * Successful uploads are recorded in localStorage for submissions / STAM panels.
+ * Uses dropzoneProps.onDropAccepted (same PatternFly pattern as Lens) to avoid a PF bug
+ * where onFileInputChange fires twice when selecting a file via the browser dialog.
  */
 export const useBeaconUpload = () => {
   const [step, setStep] = useState<BeaconUploadStep>('select');
@@ -69,12 +67,6 @@ export const useBeaconUpload = () => {
     [completeUpload],
   );
 
-  const handleClearFile: MouseEventHandler<HTMLButtonElement> = () => {
-    setStep('select');
-    setFile(undefined);
-    resetErrors();
-  };
-
   const startOver = () => {
     setStep('select');
     setFile(undefined);
@@ -93,16 +85,12 @@ export const useBeaconUpload = () => {
     }, MOCK_UPLOAD_DELAY_MS);
   };
 
-  const validated: BeaconUploadValidated = fileError ? 'error' : file ? 'success' : 'default';
-
   const uploadProps: BeaconUploadCardProps = {
     step,
     file,
     fileError,
     processError,
-    validated,
     onDropAccepted: handleFileAccepted,
-    onClearClick: handleClearFile,
     onRetry,
   };
 

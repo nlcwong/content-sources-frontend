@@ -4,16 +4,16 @@ import {
   Card,
   CardBody,
   Content,
-  FileUpload,
-  FileUploadHelperText,
   Flex,
   FlexItem,
   HelperText,
   HelperTextItem,
+  MultipleFileUpload,
+  MultipleFileUploadMain,
   Spinner,
   Title,
 } from '@patternfly/react-core';
-import { CheckCircleIcon } from '@patternfly/react-icons';
+import { CheckCircleIcon, UploadIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 
 import type { BeaconUploadCardProps } from '../hooks/useBeaconUpload';
@@ -24,16 +24,18 @@ const BeaconUploadCard = ({
   file,
   fileError,
   processError,
-  validated,
   onDropAccepted,
-  onClearClick,
   onRetry,
 }: BeaconUploadCardProps) => {
   if (step === 'uploading') {
     return (
       <Card isGlass>
         <CardBody className={spacing.p_2xl}>
-          <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }} alignItems={{ default: 'alignItemsCenter' }}>
+          <Flex
+            direction={{ default: 'column' }}
+            gap={{ default: 'gapMd' }}
+            alignItems={{ default: 'alignItemsCenter' }}
+          >
             <FlexItem>
               <Spinner size='lg' aria-label='Uploading file' />
             </FlexItem>
@@ -75,7 +77,11 @@ const BeaconUploadCard = ({
     return (
       <Card isGlass>
         <CardBody className={spacing.p_2xl}>
-          <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }} alignItems={{ default: 'alignItemsCenter' }}>
+          <Flex
+            direction={{ default: 'column' }}
+            gap={{ default: 'gapMd' }}
+            alignItems={{ default: 'alignItemsCenter' }}
+          >
             <FlexItem>
               <CheckCircleIcon color='var(--pf-t--global--icon--color--status--success--default)' />
             </FlexItem>
@@ -106,31 +112,29 @@ const BeaconUploadCard = ({
             </Title>
           </FlexItem>
           <FlexItem>
-            <FileUpload
-              browseButtonText='Choose file'
-              id='beacon-file-upload'
-              filenamePlaceholder='Drag and drop a file or choose one'
-              hideDefaultPreview
-              value={file}
-              filename={file?.name}
-              validated={validated}
-              dropzoneProps={{ onDropAccepted }}
-              onClearClick={onClearClick}
-            >
-              {fileError ? (
-                <FileUploadHelperText>
-                  <HelperText>
-                    <HelperTextItem variant='error'>{fileError}</HelperTextItem>
-                  </HelperText>
-                </FileUploadHelperText>
-              ) : null}
-            </FileUpload>
-          </FlexItem>
-          <FlexItem>
-            <Content component='small'>
-              Accepted formats include CSV, package lists, SBOMs (CycloneDX, SPDX), plain text, and
-              other files your tooling produces. Maximum size: {BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB.
-            </Content>
+            <MultipleFileUpload dropzoneProps={{ multiple: false, maxFiles: 1, onDropAccepted }}>
+              <MultipleFileUploadMain
+                titleIcon={<UploadIcon />}
+                titleText='Drag and drop a file here'
+                titleTextSeparator='or'
+                browseButtonText='Choose file'
+                infoText={
+                  <Content>
+                    Accepted formats include CSV, package lists, SBOMs (CycloneDX, SPDX), plain text,
+                    and other files your tooling produces.
+                    <br />
+                    Maximum size: {BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB.
+                  </Content>
+                }
+              />
+            </MultipleFileUpload>
+            {fileError ? (
+              <HelperText>
+                <HelperTextItem variant='error'>
+                  {file?.name ? `${file.name}: ${fileError}` : fileError}
+                </HelperTextItem>
+              </HelperText>
+            ) : null}
           </FlexItem>
         </Flex>
       </CardBody>

@@ -1,5 +1,4 @@
 export type BeaconUploadStep = 'select' | 'uploading' | 'complete' | 'error';
-export type BeaconUploadValidated = 'success' | 'error' | 'default';
 
 export type BeaconSubmissionStatus = 'Received' | 'In review' | 'Accepted';
 
