@@ -21,7 +21,7 @@ type NavItem = {
 const LightwellTopNav = () => {
   const { pathname } = useLocation();
   const rootPath = useLightwellRootPath();
-  const { navigateTo } = useLightwellNavigateTo();
+  const { navigateTo, navigateToLens } = useLightwellNavigateTo();
   const { features } = useAppContext();
 
   const beaconEnabled =
@@ -46,7 +46,7 @@ const LightwellTopNav = () => {
       label: 'Lens',
       visible: lensEnabled,
       isActive: (path) => path.includes('/lens'),
-      onClick: () => navigateTo('lens'),
+      onClick: () => navigateToLens(),
     },
     {
       key: 'beacon',

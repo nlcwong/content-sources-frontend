@@ -26,10 +26,10 @@ const COLUMNS = ['Package', 'Version', 'Ecosystem', 'Match'];
 
 const MATCH_STATUS_LABEL: Record<
   CoverageReportPackage['match_status'],
-  { text: string; color: 'green' | 'orange' | 'grey' }
+  { text: string; color: 'green' | 'yellow' | 'grey' }
 > = {
   exact: { text: 'Exact', color: 'green' },
-  partial: { text: 'Partial', color: 'orange' },
+  partial: { text: 'Partial', color: 'yellow' },
   none: { text: 'None', color: 'grey' },
 };
 
@@ -90,7 +90,10 @@ const PackageCoverageTable = ({ uuid, ecosystems }: PackageCoverageTableProps) =
     isError,
   });
 
-  const dataViewColumns: DataViewTh[] = COLUMNS.map((name) => ({ cell: name }));
+  const dataViewColumns: DataViewTh[] = COLUMNS.map((name, index) => ({
+    cell: name,
+    props: { width: ([40, 20, 20, 20] as const)[index] },
+  }));
   const dataViewRows: DataViewTrObject[] = packages.map((pkg: CoverageReportPackage) => {
     const { text, color } = MATCH_STATUS_LABEL[pkg.match_status];
     return {
@@ -101,7 +104,13 @@ const PackageCoverageTable = ({ uuid, ecosystems }: PackageCoverageTableProps) =
         { cell: pkg.ecosystem },
         {
           cell: (
-            <Label isCompact color={color}>
+            <Label
+              isCompact
+              color={color}
+              className={
+                pkg.match_status === 'partial' ? 'lightwell-match-label-partial' : undefined
+              }
+            >
               {text}
             </Label>
           ),

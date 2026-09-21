@@ -10,12 +10,14 @@ export type EcosystemCoverageSummary = {
   total: number;
 };
 
+export type CoverageMatchStatus = 'exact' | 'partial' | 'none';
+
 export type CoverageReportPackage = {
   name: string;
   version: string;
   ecosystem: string;
   covered: boolean;
-  match_status: 'exact' | 'partial' | 'none';
+  match_status: CoverageMatchStatus;
 };
 
 export type CoverageReportPackagesListResponse = {
@@ -90,7 +92,8 @@ export const getCoverageReportPackages = async (
         limit: limit.toString(),
         search: filters.search,
         match_status: filters.match_status?.join(','),
-        ecosystem: filters.ecosystem?.join(','),
+        // objectToUrlParams does not escape #, so ecosystem=C# never reached the backend
+        ecosystem: filters.ecosystem?.map(encodeURIComponent).join(','),
       },
     )}`,
   );

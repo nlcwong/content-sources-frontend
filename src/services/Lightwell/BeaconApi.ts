@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 import { objectToUrlParams } from 'helpers';
-import type { Severity, Stage, Vulnerability } from 'Pages/Lightwell/Beacon/types';
+import type { Severity, Status, Vulnerability } from 'Pages/Lightwell/Beacon/types';
 import { LIGHTWELL_BEACON_USE_MOCK } from 'Pages/Lightwell/constants';
 import { mockVulnerabilities } from 'Pages/Lightwell/mockVulnerabilities';
 import type { Meta } from './types';
@@ -21,7 +21,7 @@ export type BeaconVulnerabilityFlag = 'duplicate';
 
 export type BeaconVulnerabilityFilters = {
   severities?: Severity[];
-  stages?: Stage[];
+  statuses?: Status[];
   ltwlsuptTicketIds?: string[];
   flags?: BeaconVulnerabilityFlag[];
   search?: string;
@@ -32,7 +32,7 @@ export type BeaconPagination = Pick<Meta, 'limit' | 'offset'>;
 export type BeaconVulnerabilityMeta = {
   count: number;
   criticalCount: number;
-  stageCounts: Record<string, number>;
+  statusCounts: Record<string, number>;
 };
 
 export type BeaconData = {
@@ -47,6 +47,7 @@ export type LightwellVulnerabilityResponse = {
   component_name: string;
   package: string;
   component_version: string;
+  published_versions: string[];
   title?: string;
   cwe?: string;
   description?: string;
@@ -56,8 +57,8 @@ export type LightwellVulnerabilityResponse = {
   exploit_tested: boolean;
   reproducer_included: boolean;
   customer_priority?: string;
-  stage: string;
-  language?: string;
+  status: string;
+  ecosystem?: string;
   submitted_date: string;
   last_updated: string;
   age_days: number;
@@ -70,7 +71,7 @@ export type LightwellVulnerabilityCollectionResponse = {
   data: LightwellVulnerabilityResponse[];
   meta: Meta & {
     critical_count: number;
-    stage_counts: Record<string, number>;
+    status_counts: Record<string, number>;
   };
 };
 
@@ -104,7 +105,7 @@ export function mapLightwellVulnerability(
   vulnerability: LightwellVulnerabilityResponse,
 ): Vulnerability {
   const ticketIds = vulnerability.ltwlsupt_ticket_ids ?? [];
-  const stage = vulnerability.stage as Stage;
+  const status = vulnerability.status as Status;
 
   return {
     uuid: vulnerability.uuid,
@@ -112,6 +113,7 @@ export function mapLightwellVulnerability(
     purl: vulnerability.purl ?? '',
     componentName: vulnerability.component_name,
     componentVersion: vulnerability.component_version,
+    publishedVersions: vulnerability.published_versions ?? [],
     title: vulnerability.title ?? '',
     cwe: vulnerability.cwe ?? '',
     description: vulnerability.description ?? '',
@@ -121,8 +123,8 @@ export function mapLightwellVulnerability(
     exploitTested: vulnerability.exploit_tested,
     reproducerIncluded: vulnerability.reproducer_included,
     customerPriority: vulnerability.customer_priority as Vulnerability['customerPriority'],
-    stage,
-    ecosystem: vulnerability.language ?? '',
+    status,
+    ecosystem: vulnerability.ecosystem ?? '',
     submittedDate: formatDate(vulnerability.submitted_date),
     lastUpdated: formatDateTime(vulnerability.last_updated),
     ageDays: vulnerability.age_days,
@@ -139,7 +141,7 @@ export function mapCollectionMeta(
   return {
     count: meta.count,
     criticalCount: meta.critical_count,
-    stageCounts: meta.stage_counts ?? {},
+    statusCounts: meta.status_counts ?? {},
   };
 }
 
@@ -157,8 +159,8 @@ export function buildVulnerabilityQueryParams(
   if (filters?.severities?.length) {
     params.severity = filters.severities.map(mapSeverityToApi).join(',');
   }
-  if (filters?.stages?.length) {
-    params.stage = filters.stages.join(',');
+  if (filters?.statuses?.length) {
+    params.status = filters.statuses.join(',');
   }
   if (filters?.ltwlsuptTicketIds?.length) {
     params.ltwlsupt_ticket_id = filters.ltwlsuptTicketIds.join(',');
@@ -186,7 +188,7 @@ function filterMockVulnerabilities(
     if (filters?.severities?.length && !filters.severities.includes(vulnerability.severity)) {
       return false;
     }
-    if (filters?.stages?.length && !filters.stages.includes(vulnerability.stage)) {
+    if (filters?.statuses?.length && !filters.statuses.includes(vulnerability.status)) {
       return false;
     }
     if (filters?.ltwlsuptTicketIds?.length) {
@@ -218,16 +220,16 @@ function filterMockVulnerabilities(
 }
 
 function computeMockMeta(vulnerabilities: Vulnerability[]): BeaconVulnerabilityMeta {
-  const stageCounts: Record<string, number> = {};
+  const statusCounts: Record<string, number> = {};
 
   for (const vulnerability of vulnerabilities) {
-    stageCounts[vulnerability.stage] = (stageCounts[vulnerability.stage] ?? 0) + 1;
+    statusCounts[vulnerability.status] = (statusCounts[vulnerability.status] ?? 0) + 1;
   }
 
   return {
     count: vulnerabilities.length,
     criticalCount: vulnerabilities.filter((v) => v.severity === 'Critical').length,
-    stageCounts,
+    statusCounts,
   };
 }
 
@@ -320,7 +322,7 @@ export const getVulnerabilities = async (
   let meta: BeaconVulnerabilityMeta = {
     count: 0,
     criticalCount: 0,
-    stageCounts: {},
+    statusCounts: {},
   };
 
   while (offset < total) {
