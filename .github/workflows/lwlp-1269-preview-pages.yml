@@ -1,0 +1,48 @@
+name: Deploy LWLP-1269 preview
+
+on:
+  push:
+    branches:
+      - feature/lwlp-1269-upload-intake
+    paths:
+      - 'preview/**'
+      - 'src/Pages/Lightwell/Beacon/**'
+      - '.github/workflows/lwlp-1269-preview-pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: lwlp-1269-preview-pages
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: preview/package-lock.json
+
+      - name: Install and build preview
+        working-directory: preview
+        env:
+          GITHUB_PAGES: 'true'
+        run: |
+          npm ci
+          npm run build
+
+      - name: Deploy to gh-pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./preview/dist
+          publish_branch: gh-pages
+          commit_message: 'Deploy LWLP-1269 Beacon upload prototypes'
