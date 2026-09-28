@@ -23,12 +23,6 @@ jest.mock('services/Lightwell/BeaconQueries', () => ({
   useLtwlsuptTicketIdsQuery: jest.fn(),
 }));
 
-jest.mock('Hooks/Lightwell/navigation/useLightwellNavigateTo', () => ({
-  useLightwellNavigateTo: () => ({
-    navigateTo: jest.fn(),
-  }),
-}));
-
 import { useBeaconData } from './hooks/useBeaconData';
 import { useCustomerIdsQuery } from 'services/Lightwell/CustomerQueries';
 import { useLtwlsuptTicketIdsQuery } from 'services/Lightwell/BeaconQueries';

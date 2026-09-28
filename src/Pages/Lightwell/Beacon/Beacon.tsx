@@ -27,13 +27,11 @@ import HelpIcon from '@patternfly/react-icons/dist/esm/icons/help-icon';
 import UserIcon from '@patternfly/react-icons/dist/esm/icons/user-icon';
 
 import useDebounce from 'Hooks/useDebounce';
-import { useLightwellNavigateTo } from 'Hooks/Lightwell/navigation/useLightwellNavigateTo';
 import LightwellPageHeader from '../components/LightwellPageHeader';
 import { SEVERITIES, STATUSES } from './constants';
 import type { Severity, Status } from './types';
 import { CustomerIdSelect } from './components/CustomerIdSelect';
 import { ExportMenu } from './components/ExportMenu';
-import IncomingUploadsPanel from './components/IncomingUploadsPanel';
 import { PipelineView } from './components/PipelineView';
 import { VulnerabilityTable } from './components/VulnerabilityTable';
 import { useBeaconData } from './hooks/useBeaconData';
@@ -78,7 +76,6 @@ function buildBeaconFilters(
 }
 
 const Beacon = () => {
-  const { navigateTo } = useLightwellNavigateTo();
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>();
   const [selectedSeverities, setSelectedSeverities] = useState<Set<Severity>>(new Set());
   const [selectedStatuses, setSelectedStatuses] = useState<Set<Status>>(new Set());
@@ -216,33 +213,17 @@ const Beacon = () => {
         ouiaId='lightwell-beacon-header'
         description='Understand the status of your Lightwell submissions'
         actions={
-          <Flex gap={{ default: 'gapMd' }}>
-            <FlexItem>
-              <Button
-                variant='primary'
-                onClick={() => navigateTo('beaconUpload')}
-                ouiaId='lightwell-beacon-upload-cta'
-              >
-                Upload to Beacon
-              </Button>
-            </FlexItem>
-            <FlexItem>
-              <ExportMenu
-                customerId={selectedCustomerId}
-                filters={queryFilters}
-                visibleColumns={getVisibleVulnerabilityColumns(columns)}
-                itemCount={displayMeta?.count ?? 0}
-              />
-            </FlexItem>
-          </Flex>
+          <ExportMenu
+            customerId={selectedCustomerId}
+            filters={queryFilters}
+            visibleColumns={getVisibleVulnerabilityColumns(columns)}
+            itemCount={displayMeta?.count ?? 0}
+          />
         }
       />
 
       <PageSection hasBodyWrapper={false} data-ouia-component-id='lightwell-beacon-page'>
         <Stack hasGutter className='lightwell-beacon-content'>
-          <StackItem>
-            <IncomingUploadsPanel />
-          </StackItem>
           <StackItem>
             <Flex
               gap={{ default: 'gapMd' }}

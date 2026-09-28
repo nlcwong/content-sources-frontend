@@ -5,7 +5,8 @@ export type LightwellDestinationKey =
   | 'repositoryPackages'
   | 'packageDetails'
   | 'beacon'
-  | 'beaconUpload';
+  | 'beaconUpload'
+  | 'beaconIncoming';
 
 export type LightwellNavigationParams = {
   rootPath: string;
@@ -33,6 +34,7 @@ export const lightwellNavigationPaths: Record<LightwellDestinationKey, BuildLigh
   repositories: ({ rootPath }) => rootPath,
   beacon: ({ rootPath }) => `${rootPath}/beacon`,
   beaconUpload: ({ rootPath }) => `${rootPath}/beacon/upload`,
+  beaconIncoming: ({ rootPath }) => `${rootPath}/beacon/incoming`,
   repositoryPackages: ({ rootPath, repoSlug, packagesParams }) =>
     appendSearchParams(`${rootPath}/${repoSlug}`, packagesParams ?? { search: '', page: 1 }),
   packageDetails: ({ rootPath, repoSlug, packageName, groupId, packagesParams }) => {

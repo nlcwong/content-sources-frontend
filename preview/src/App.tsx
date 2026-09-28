@@ -3,7 +3,6 @@ import {
   Button,
   Card,
   CardBody,
-  CardTitle,
   Flex,
   FlexItem,
   Page,
@@ -14,7 +13,7 @@ import {
 } from '@patternfly/react-core';
 import { InfoCircleIcon, PlusIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
-import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import BeaconUploadCard from 'Pages/Lightwell/Beacon/components/BeaconUploadCard';
 import IncomingUploadsPanel from 'Pages/Lightwell/Beacon/components/IncomingUploadsPanel';
@@ -24,65 +23,30 @@ import LightwellPageHeader from 'Pages/Lightwell/components/LightwellPageHeader'
 
 const PreviewBanner = () => (
   <Banner status='info' screenReaderText='Wireframe notice'>
-    <InfoCircleIcon /> Wireframe preview of LWLP-1269 Beacon upload prototypes. No VPN, hosts file,
-    or fec required.
+    <InfoCircleIcon /> Wireframe preview of LWLP-1269 Beacon upload (unified A + C). No VPN, hosts
+    file, or fec required.
   </Banner>
-);
-
-const Home = () => (
-  <PageSection>
-    <Stack hasGutter style={{ maxWidth: 720 }}>
-      <StackItem>
-        <Title headingLevel='h1'>LWLP-1269 Beacon upload prototypes</Title>
-      </StackItem>
-      <StackItem>
-        Pick a navigation model to compare. Both use the Lens-style upload layout with mock
-        uploads.
-      </StackItem>
-      <StackItem>
-        <Flex gap={{ default: 'gapMd' }} direction={{ default: 'column' }}>
-          <FlexItem>
-            <Card isClickable>
-              <CardTitle>
-                <Link to='/nav'>Prototype A — shared top nav</Link>
-              </CardTitle>
-              <CardBody>
-                Upload-only page. Reach it from an in-app top nav that includes “Upload to Beacon”.
-              </CardBody>
-            </Card>
-          </FlexItem>
-          <FlexItem>
-            <Card isClickable>
-              <CardTitle>
-                <Link to='/intake'>Prototype C — Beacon header + intake</Link>
-              </CardTitle>
-              <CardBody>
-                Upload from a Beacon page header button, plus My submissions and a STAM incoming
-                uploads panel.
-              </CardBody>
-            </Card>
-          </FlexItem>
-        </Flex>
-      </StackItem>
-      <StackItem>
-        <Button component={Link} to='/nav' variant='primary'>
-          Open Prototype A
-        </Button>{' '}
-        <Button component={Link} to='/intake' variant='secondary'>
-          Open Prototype C
-        </Button>
-      </StackItem>
-    </Stack>
-  </PageSection>
 );
 
 const TopNav = () => {
   const { pathname } = useLocation();
   const items = [
-    { to: '/nav', label: 'Repositories', match: (p: string) => p === '/nav' },
-    { to: '/nav/upload', label: 'Upload to Beacon', match: (p: string) => p.includes('/upload') },
-    { to: '/intake', label: 'Beacon (Proto C)', match: () => false },
-    { to: '/', label: 'All prototypes', match: () => false },
+    { to: '/', label: 'Repositories', match: (p: string) => p === '/' },
+    {
+      to: '/beacon',
+      label: 'Beacon',
+      match: (p: string) => p === '/beacon',
+    },
+    {
+      to: '/beacon/upload',
+      label: 'Upload to Beacon',
+      match: (p: string) => p.includes('/upload'),
+    },
+    {
+      to: '/beacon/incoming',
+      label: 'Incoming uploads',
+      match: (p: string) => p.includes('/incoming'),
+    },
   ];
 
   return (
@@ -91,7 +55,7 @@ const TopNav = () => {
         {items.map((item) => {
           const active = item.match(pathname);
           return (
-            <FlexItem key={item.to + item.label}>
+            <FlexItem key={item.to}>
               <Button
                 component={Link}
                 to={item.to}
@@ -108,7 +72,34 @@ const TopNav = () => {
   );
 };
 
-const UploadPage = ({ showSubmissions }: { showSubmissions: boolean }) => {
+const RepositoriesPlaceholder = () => (
+  <PageSection>
+    <Title headingLevel='h1'>Repositories (placeholder)</Title>
+    <p className={spacing.mtMd}>
+      Use the top nav to open <strong>Upload to Beacon</strong> or <strong>Incoming uploads</strong>{' '}
+      (STAM review).
+    </p>
+  </PageSection>
+);
+
+const BeaconPlaceholder = () => (
+  <>
+    <LightwellPageHeader
+      title='Beacon'
+      description='Understand the status of your Lightwell submissions'
+    />
+    <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
+      <Card isGlass>
+        <CardBody>
+          Vulnerability table and filters are omitted in this wireframe. Upload via the top nav, then
+          open <strong>Incoming uploads</strong> to review submissions as a STAM.
+        </CardBody>
+      </Card>
+    </PageSection>
+  </>
+);
+
+const UploadPage = () => {
   const { isComplete, uploadProps, startOver } = useBeaconUpload();
 
   return (
@@ -129,70 +120,8 @@ const UploadPage = ({ showSubmissions }: { showSubmissions: boolean }) => {
           <StackItem>
             <BeaconUploadCard {...uploadProps} />
           </StackItem>
-          {showSubmissions ? (
-            <StackItem>
-              <MySubmissionsTable />
-            </StackItem>
-          ) : null}
-        </Stack>
-      </PageSection>
-    </>
-  );
-};
-
-const PrototypeA = () => {
-  const { pathname } = useLocation();
-  const onUpload = pathname.includes('/upload');
-
-  return (
-    <>
-      <TopNav />
-      {onUpload ? (
-        <UploadPage showSubmissions={false} />
-      ) : (
-        <PageSection>
-          <Title headingLevel='h1'>Repositories (placeholder)</Title>
-          <p className={spacing.mtMd}>
-            Prototype A uses the shared top nav. Choose <strong>Upload to Beacon</strong> above to
-            open the upload page.
-          </p>
-        </PageSection>
-      )}
-    </>
-  );
-};
-
-const PrototypeCBeacon = () => {
-  const navigate = useNavigate();
-
-  return (
-    <>
-      <LightwellPageHeader
-        title='Beacon'
-        description='Understand the status of your Lightwell submissions'
-        actions={
-          <Button variant='primary' onClick={() => navigate('/intake/upload')}>
-            Upload to Beacon
-          </Button>
-        }
-      />
-      <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
-        <Stack hasGutter style={{ maxWidth: 1200 }}>
           <StackItem>
-            <IncomingUploadsPanel />
-          </StackItem>
-          <StackItem>
-            <Card isGlass>
-              <CardBody>
-                Vulnerability table and filters are omitted in this wireframe. Use{' '}
-                <strong>Upload to Beacon</strong>, then return here to see incoming uploads.
-              </CardBody>
-            </Card>
-          </StackItem>
-          <StackItem>
-            <Button component={Link} to='/' variant='link'>
-              Back to prototype chooser
-            </Button>
+            <MySubmissionsTable />
           </StackItem>
         </Stack>
       </PageSection>
@@ -200,14 +129,19 @@ const PrototypeCBeacon = () => {
   );
 };
 
-const PrototypeCUpload = () => (
+const IncomingUploadsPage = () => (
   <>
-    <div className={`${spacing.pxLg} ${spacing.pySm}`}>
-      <Button component={Link} to='/intake' variant='link'>
-        ← Back to Beacon
-      </Button>
-    </div>
-    <UploadPage showSubmissions />
+    <LightwellPageHeader
+      title='Incoming uploads'
+      description='Review customer vulnerability submissions awaiting Lightwell STAM intake.'
+    />
+    <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
+      <Stack hasGutter style={{ maxWidth: 1200 }}>
+        <StackItem>
+          <IncomingUploadsPanel />
+        </StackItem>
+      </Stack>
+    </PageSection>
   </>
 );
 
@@ -215,12 +149,12 @@ const App = () => (
   <>
     <PreviewBanner />
     <Page>
+      <TopNav />
       <Routes>
-        <Route path='/' element={<Home />} />
-        <Route path='/nav' element={<PrototypeA />} />
-        <Route path='/nav/upload' element={<PrototypeA />} />
-        <Route path='/intake' element={<PrototypeCBeacon />} />
-        <Route path='/intake/upload' element={<PrototypeCUpload />} />
+        <Route path='/' element={<RepositoriesPlaceholder />} />
+        <Route path='/beacon' element={<BeaconPlaceholder />} />
+        <Route path='/beacon/upload' element={<UploadPage />} />
+        <Route path='/beacon/incoming' element={<IncomingUploadsPage />} />
         <Route path='*' element={<Navigate to='/' replace />} />
       </Routes>
     </Page>
