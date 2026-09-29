@@ -3,20 +3,21 @@ import { PlusIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 
 import LightwellPageHeader from '../components/LightwellPageHeader';
+import AccessBoundaryNote from './components/AccessBoundaryNote';
 import BeaconUploadCard from './components/BeaconUploadCard';
 import MySubmissionsTable from './components/MySubmissionsTable';
 import { useBeaconUpload } from './hooks/useBeaconUpload';
 
 const BeaconUpload = () => {
-  const { isComplete, uploadProps, startOver } = useBeaconUpload();
+  const { isReceived, uploadProps, startOver } = useBeaconUpload();
 
   return (
     <>
       <LightwellPageHeader
         title='Upload to Beacon'
         ouiaId='lightwell-beacon-upload-header'
-        description='Securely submit vulnerability data for Lightwell Clearinghouse review without emailing files to your STAM.'
-        {...(isComplete && {
+        description='Submit vulnerability findings using the shared JSON / OpenAPI intake contract—without emailing files to your STAM.'
+        {...(isReceived && {
           actions: (
             <Button
               variant='secondary'
@@ -24,7 +25,7 @@ const BeaconUpload = () => {
               ouiaId='lightwell-beacon-upload-another'
               onClick={startOver}
             >
-              Upload another file
+              Submit another report
             </Button>
           ),
         })}
@@ -35,6 +36,9 @@ const BeaconUpload = () => {
         className={`${spacing.pt_0} ${spacing.pbLg} ${spacing.pxLg} ${spacing.plXs}`}
       >
         <Stack hasGutter style={{ maxWidth: 1200 }}>
+          <StackItem>
+            <AccessBoundaryNote audience='customer' />
+          </StackItem>
           <StackItem>
             <BeaconUploadCard {...uploadProps} />
           </StackItem>

@@ -1,7 +1,19 @@
 import { renderHook, act } from '@testing-library/react';
 
 import { useBeaconUpload } from './useBeaconUpload';
-import { BEACON_UPLOAD_MAX_FILE_SIZE_BYTES } from '../uploadTypes';
+
+const validPayload = JSON.stringify({
+  findings: [
+    {
+      vulnerability_id: 'VULN-1',
+      packageurl: 'pkg:maven/org.example/lib@1.0.0',
+      title: 'Example',
+      description: 'Details',
+      cvss_severity: 'High',
+      cvss_score: 7.5,
+    },
+  ],
+});
 
 describe('useBeaconUpload', () => {
   beforeEach(() => {
@@ -13,38 +25,51 @@ describe('useBeaconUpload', () => {
     jest.useRealTimers();
   });
 
-  it('rejects files over the size limit', () => {
+  it('surfaces structural errors for invalid JSON', () => {
     const { result } = renderHook(() => useBeaconUpload());
-    const largeFile = new File(['x'], 'big.csv', { type: 'text/csv' });
-    Object.defineProperty(largeFile, 'size', { value: BEACON_UPLOAD_MAX_FILE_SIZE_BYTES + 1 });
 
     act(() => {
-      result.current.uploadProps.onDropAccepted([largeFile]);
+      result.current.uploadProps.onJsonTextChange('{');
+    });
+    act(() => {
+      result.current.uploadProps.onSubmit();
+    });
+    act(() => {
+      jest.advanceTimersByTime(1000);
     });
 
-    expect(result.current.uploadProps.fileError).toMatch(/size limit/i);
-    expect(result.current.step).toBe('select');
+    expect(result.current.step).toBe('error');
+    expect(result.current.uploadProps.structuralErrors[0].message).toMatch(/Invalid JSON/i);
   });
 
-  it('completes a mock upload and records a submission', () => {
+  it('records Received with a durable submission id after structural pass', () => {
     const { result } = renderHook(() => useBeaconUpload());
-    const file = new File(['cve,package'], 'vulns.csv', { type: 'text/csv' });
 
     act(() => {
-      result.current.uploadProps.onDropAccepted([file]);
+      result.current.uploadProps.onJsonTextChange(validPayload);
+    });
+    act(() => {
+      result.current.uploadProps.onSubmit();
     });
 
-    expect(result.current.step).toBe('uploading');
+    expect(result.current.step).toBe('validating');
 
     act(() => {
-      jest.advanceTimersByTime(1500);
+      jest.advanceTimersByTime(1000);
     });
 
-    expect(result.current.step).toBe('complete');
-    expect(result.current.isComplete).toBe(true);
-    expect(JSON.parse(localStorage.getItem('lightwell-beacon-submissions') ?? '[]')).toEqual(
+    expect(result.current.step).toBe('received');
+    expect(result.current.isReceived).toBe(true);
+    expect(result.current.submissionId).toMatch(/^SUB-/);
+
+    const stored = JSON.parse(localStorage.getItem('lightwell-beacon-submissions') ?? '[]');
+    expect(stored).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ filename: 'vulns.csv', status: 'Received' }),
+        expect.objectContaining({
+          status: 'Received',
+          findingCount: 1,
+          id: result.current.submissionId,
+        }),
       ]),
     );
   });

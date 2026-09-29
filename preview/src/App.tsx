@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Banner,
   Button,
@@ -10,44 +11,95 @@ import {
   Stack,
   StackItem,
   Title,
+  ToggleGroup,
+  ToggleGroupItem,
 } from '@patternfly/react-core';
 import { InfoCircleIcon, PlusIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
-import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
+import AccessBoundaryNote from 'Pages/Lightwell/Beacon/components/AccessBoundaryNote';
 import BeaconUploadCard from 'Pages/Lightwell/Beacon/components/BeaconUploadCard';
 import IncomingUploadsPanel from 'Pages/Lightwell/Beacon/components/IncomingUploadsPanel';
 import MySubmissionsTable from 'Pages/Lightwell/Beacon/components/MySubmissionsTable';
 import { useBeaconUpload } from 'Pages/Lightwell/Beacon/hooks/useBeaconUpload';
 import LightwellPageHeader from 'Pages/Lightwell/components/LightwellPageHeader';
 
+type PreviewRole = 'customer' | 'stam';
+
 const PreviewBanner = () => (
   <Banner status='info' screenReaderText='Wireframe notice'>
-    <InfoCircleIcon /> Wireframe preview of LWLP-1269 Beacon upload (unified A + C). No VPN, hosts
-    file, or fec required.
+    <InfoCircleIcon /> Phase 1 Beacon intake wireframe (JSON contract + STAM accept). Mocked only—no
+    VPN, hosts file, or fec required.
   </Banner>
 );
 
-const TopNav = () => {
+const RoleToggle = ({
+  role,
+  onChange,
+}: {
+  role: PreviewRole;
+  onChange: (next: PreviewRole) => void;
+}) => {
+  const navigate = useNavigate();
+
+  return (
+    <div className={`${spacing.pxLg} ${spacing.pbSm}`}>
+      <Flex
+        gap={{ default: 'gapMd' }}
+        alignItems={{ default: 'alignItemsCenter' }}
+        flexWrap={{ default: 'wrap' }}
+      >
+        <FlexItem>
+          <Title headingLevel='h2' size='md'>
+            Preview as
+          </Title>
+        </FlexItem>
+        <FlexItem>
+          <ToggleGroup aria-label='Preview role'>
+            <ToggleGroupItem
+              text='Customer'
+              isSelected={role === 'customer'}
+              onChange={() => {
+                onChange('customer');
+                navigate('/beacon/upload');
+              }}
+            />
+            <ToggleGroupItem
+              text='STAM'
+              isSelected={role === 'stam'}
+              onChange={() => {
+                onChange('stam');
+                navigate('/beacon/incoming');
+              }}
+            />
+          </ToggleGroup>
+        </FlexItem>
+      </Flex>
+    </div>
+  );
+};
+
+const TopNav = ({ role }: { role: PreviewRole }) => {
   const { pathname } = useLocation();
-  const items = [
+  const customerItems = [
     { to: '/', label: 'Repositories', match: (p: string) => p === '/' },
-    {
-      to: '/beacon',
-      label: 'Beacon',
-      match: (p: string) => p === '/beacon',
-    },
+    { to: '/beacon', label: 'Beacon', match: (p: string) => p === '/beacon' },
     {
       to: '/beacon/upload',
       label: 'Upload to Beacon',
       match: (p: string) => p.includes('/upload'),
     },
+  ];
+  const stamItems = [
+    { to: '/beacon', label: 'Beacon', match: (p: string) => p === '/beacon' },
     {
       to: '/beacon/incoming',
       label: 'Incoming uploads',
       match: (p: string) => p.includes('/incoming'),
     },
   ];
+  const items = role === 'customer' ? customerItems : stamItems;
 
   return (
     <nav aria-label='Lightwell preview' className={`${spacing.pxLg} ${spacing.pySm}`}>
@@ -76,23 +128,24 @@ const RepositoriesPlaceholder = () => (
   <PageSection>
     <Title headingLevel='h1'>Repositories (placeholder)</Title>
     <p className={spacing.mtMd}>
-      Use the top nav to open <strong>Upload to Beacon</strong> or <strong>Incoming uploads</strong>{' '}
-      (STAM review).
+      Use the top nav to open <strong>Upload to Beacon</strong>. Switch Preview as to STAM for{' '}
+      <strong>Incoming uploads</strong>.
     </p>
   </PageSection>
 );
 
-const BeaconPlaceholder = () => (
+const BeaconPlaceholder = ({ role }: { role: PreviewRole }) => (
   <>
     <LightwellPageHeader
       title='Beacon'
       description='Understand the status of your Lightwell submissions'
     />
     <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
+      <AccessBoundaryNote audience={role} />
       <Card isGlass>
         <CardBody>
-          Vulnerability table and filters are omitted in this wireframe. Upload via the top nav, then
-          open <strong>Incoming uploads</strong> to review submissions as a STAM.
+          Vulnerability table and filters are omitted in this wireframe. Customers upload via{' '}
+          <strong>Upload to Beacon</strong>; STAMs review on <strong>Incoming uploads</strong>.
         </CardBody>
       </Card>
     </PageSection>
@@ -100,23 +153,26 @@ const BeaconPlaceholder = () => (
 );
 
 const UploadPage = () => {
-  const { isComplete, uploadProps, startOver } = useBeaconUpload();
+  const { isReceived, uploadProps, startOver } = useBeaconUpload();
 
   return (
     <>
       <LightwellPageHeader
         title='Upload to Beacon'
-        description='Securely submit vulnerability data for Lightwell Clearinghouse review without emailing files to your STAM.'
-        {...(isComplete && {
+        description='Submit vulnerability findings using the shared JSON / OpenAPI intake contract—without emailing files to your STAM.'
+        {...(isReceived && {
           actions: (
             <Button variant='secondary' icon={<PlusIcon />} onClick={startOver}>
-              Upload another file
+              Submit another report
             </Button>
           ),
         })}
       />
       <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
         <Stack hasGutter style={{ maxWidth: 1200 }}>
+          <StackItem>
+            <AccessBoundaryNote audience='customer' />
+          </StackItem>
           <StackItem>
             <BeaconUploadCard {...uploadProps} />
           </StackItem>
@@ -133,10 +189,13 @@ const IncomingUploadsPage = () => (
   <>
     <LightwellPageHeader
       title='Incoming uploads'
-      description='Review customer vulnerability submissions awaiting Lightwell STAM intake.'
+      description='Review Received customer vulnerability submissions. Accept for processing after semantic review—before JSM automation.'
     />
     <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
       <Stack hasGutter style={{ maxWidth: 1200 }}>
+        <StackItem>
+          <AccessBoundaryNote audience='stam' />
+        </StackItem>
         <StackItem>
           <IncomingUploadsPanel />
         </StackItem>
@@ -145,20 +204,31 @@ const IncomingUploadsPage = () => (
   </>
 );
 
-const App = () => (
-  <>
-    <PreviewBanner />
-    <Page>
-      <TopNav />
-      <Routes>
-        <Route path='/' element={<RepositoriesPlaceholder />} />
-        <Route path='/beacon' element={<BeaconPlaceholder />} />
-        <Route path='/beacon/upload' element={<UploadPage />} />
-        <Route path='/beacon/incoming' element={<IncomingUploadsPage />} />
-        <Route path='*' element={<Navigate to='/' replace />} />
-      </Routes>
-    </Page>
-  </>
-);
+const App = () => {
+  const [role, setRole] = useState<PreviewRole>('customer');
+
+  return (
+    <>
+      <PreviewBanner />
+      <Page>
+        <RoleToggle role={role} onChange={setRole} />
+        <TopNav role={role} />
+        <Routes>
+          <Route path='/' element={<RepositoriesPlaceholder />} />
+          <Route path='/beacon' element={<BeaconPlaceholder role={role} />} />
+          <Route
+            path='/beacon/upload'
+            element={role === 'customer' ? <UploadPage /> : <Navigate to='/beacon/incoming' replace />}
+          />
+          <Route
+            path='/beacon/incoming'
+            element={role === 'stam' ? <IncomingUploadsPage /> : <Navigate to='/beacon/upload' replace />}
+          />
+          <Route path='*' element={<Navigate to='/' replace />} />
+        </Routes>
+      </Page>
+    </>
+  );
+};
 
 export default App;

@@ -7,6 +7,7 @@ import {
   CardTitle,
   Content,
 } from '@patternfly/react-core';
+import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import { Table, TableVariant, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 
 import {
@@ -25,7 +26,7 @@ const formatUploadedAt = (iso: string) => {
 };
 
 /**
- * STAM-facing prototype panel: customer submissions awaiting review.
+ * STAM-facing prototype panel: customer submissions awaiting accept-for-processing.
  * Shares localStorage store with the customer upload page.
  */
 const IncomingUploadsPanel = () => {
@@ -38,14 +39,23 @@ const IncomingUploadsPanel = () => {
         <CardTitle>Incoming customer uploads</CardTitle>
       </CardHeader>
       <CardBody>
+        <Content component='small'>
+          Assigned LW-STAM is notified on new Received submissions (mock). Accept for processing
+          only after semantic / handling review—before JSM automation.
+        </Content>
         {incoming.length === 0 ? (
-          <Content component='p'>No customer submissions awaiting review.</Content>
+          <Content component='p' className={spacing.mtMd}>
+            No customer submissions awaiting accept for processing.
+          </Content>
         ) : (
           <Table variant={TableVariant.compact} aria-label='Incoming customer uploads'>
             <Thead>
               <Tr>
-                <Th>Filename</Th>
-                <Th>Uploaded</Th>
+                <Th>Submission ID</Th>
+                <Th>Submitted</Th>
+                <Th>Findings</Th>
+                <Th>Submitter</Th>
+                <Th>Reference</Th>
                 <Th>Status</Th>
                 <Th>Actions</Th>
               </Tr>
@@ -53,17 +63,24 @@ const IncomingUploadsPanel = () => {
             <Tbody>
               {incoming.map((submission) => (
                 <Tr key={submission.id}>
-                  <Td dataLabel='Filename'>{submission.filename}</Td>
-                  <Td dataLabel='Uploaded'>{formatUploadedAt(submission.uploadedAt)}</Td>
+                  <Td dataLabel='Submission ID'>
+                    <Content component='code'>{submission.id}</Content>
+                  </Td>
+                  <Td dataLabel='Submitted'>{formatUploadedAt(submission.uploadedAt)}</Td>
+                  <Td dataLabel='Findings'>{submission.findingCount}</Td>
+                  <Td dataLabel='Submitter'>{submission.submitterName}</Td>
+                  <Td dataLabel='Reference'>{submission.submitterReference}</Td>
                   <Td dataLabel='Status'>{submission.status}</Td>
                   <Td dataLabel='Actions'>
                     <Button
                       variant='secondary'
                       size='sm'
-                      onClick={() => updateBeaconSubmissionStatus(submission.id, 'Accepted')}
+                      onClick={() =>
+                        updateBeaconSubmissionStatus(submission.id, 'Accepted for processing')
+                      }
                       ouiaId={`lightwell-beacon-accept-${submission.id}`}
                     >
-                      Mark accepted
+                      Accept for processing
                     </Button>
                   </Td>
                 </Tr>

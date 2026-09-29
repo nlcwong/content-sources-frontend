@@ -13,6 +13,32 @@ const notifySubmissionsChanged = () => {
   window.dispatchEvent(new Event(SUBMISSIONS_CHANGED_EVENT));
 };
 
+const normalizeStatus = (status: string): BeaconSubmissionStatus => {
+  if (status === 'Accepted' || status === 'Accepted for processing') {
+    return 'Accepted for processing';
+  }
+  return 'Received';
+};
+
+const normalizeSubmission = (raw: Record<string, unknown>): BeaconSubmission | null => {
+  if (typeof raw.id !== 'string') return null;
+  return {
+    id: raw.id,
+    uploadedAt: typeof raw.uploadedAt === 'string' ? raw.uploadedAt : new Date().toISOString(),
+    status: normalizeStatus(typeof raw.status === 'string' ? raw.status : 'Received'),
+    findingCount: typeof raw.findingCount === 'number' ? raw.findingCount : 0,
+    jsonFilename: typeof raw.jsonFilename === 'string' ? raw.jsonFilename : undefined,
+    pocFilename: typeof raw.pocFilename === 'string' ? raw.pocFilename : undefined,
+    sizeBytes: typeof raw.sizeBytes === 'number' ? raw.sizeBytes : 0,
+    submitterName:
+      typeof raw.submitterName === 'string' ? raw.submitterName : 'Demo customer user',
+    submitterReference:
+      typeof raw.submitterReference === 'string'
+        ? raw.submitterReference
+        : 'Ref: intake-demo',
+  };
+};
+
 export const readBeaconSubmissions = (): BeaconSubmission[] => {
   try {
     const raw = localStorage.getItem(BEACON_SUBMISSIONS_STORAGE_KEY);
@@ -24,8 +50,18 @@ export const readBeaconSubmissions = (): BeaconSubmission[] => {
       cachedSubmissions = [];
       return cachedSubmissions;
     }
-    const parsed = JSON.parse(raw) as BeaconSubmission[];
-    cachedSubmissions = Array.isArray(parsed) ? parsed : [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) {
+      cachedSubmissions = [];
+      return cachedSubmissions;
+    }
+    cachedSubmissions = parsed
+      .map((item) =>
+        item && typeof item === 'object'
+          ? normalizeSubmission(item as Record<string, unknown>)
+          : null,
+      )
+      .filter((item): item is BeaconSubmission => item !== null);
     return cachedSubmissions;
   } catch {
     cachedRaw = null;
@@ -47,7 +83,10 @@ export const addBeaconSubmission = (
 ) => {
   const next: BeaconSubmission = {
     ...submission,
-    id: `sub-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    id: `SUB-${Date.now().toString(36).toUpperCase()}-${Math.random()
+      .toString(36)
+      .slice(2, 6)
+      .toUpperCase()}`,
     uploadedAt: new Date().toISOString(),
     status: 'Received',
   };
@@ -71,5 +110,6 @@ export const subscribeBeaconSubmissions = (listener: () => void) => {
   };
 };
 
-export const getIncomingBeaconSubmissions = (submissions: BeaconSubmission[] = readBeaconSubmissions()) =>
-  submissions.filter((submission) => submission.status !== 'Accepted');
+export const getIncomingBeaconSubmissions = (
+  submissions: BeaconSubmission[] = readBeaconSubmissions(),
+) => submissions.filter((submission) => submission.status === 'Received');
