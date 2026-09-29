@@ -87,7 +87,7 @@ const TopNav = ({ role }: { role: PreviewRole }) => {
     { to: '/beacon', label: 'Beacon', match: (p: string) => p === '/beacon' },
     {
       to: '/beacon/upload',
-      label: 'Upload to Beacon',
+      label: 'Beacon Intake',
       match: (p: string) => p.includes('/upload'),
     },
   ];
@@ -128,24 +128,23 @@ const RepositoriesPlaceholder = () => (
   <PageSection>
     <Title headingLevel='h1'>Repositories (placeholder)</Title>
     <p className={spacing.mtMd}>
-      Use the top nav to open <strong>Upload to Beacon</strong>. Switch Preview as to STAM for{' '}
+      Use the top nav to open <strong>Beacon Intake</strong>. Switch Preview as to STAM for{' '}
       <strong>Incoming uploads</strong>.
     </p>
   </PageSection>
 );
 
-const BeaconPlaceholder = ({ role }: { role: PreviewRole }) => (
+const BeaconPlaceholder = () => (
   <>
     <LightwellPageHeader
       title='Beacon'
       description='Understand the status of your Lightwell submissions'
     />
     <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
-      <AccessBoundaryNote audience={role} />
       <Card isGlass>
         <CardBody>
           Vulnerability table and filters are omitted in this wireframe. Customers upload via{' '}
-          <strong>Upload to Beacon</strong>; STAMs review on <strong>Incoming uploads</strong>.
+          <strong>Beacon Intake</strong>; STAMs review on <strong>Incoming uploads</strong>.
         </CardBody>
       </Card>
     </PageSection>
@@ -154,28 +153,54 @@ const BeaconPlaceholder = ({ role }: { role: PreviewRole }) => (
 
 const UploadPage = () => {
   const { isReceived, uploadProps, startOver } = useBeaconUpload();
+  const [isComposing, setIsComposing] = useState(false);
+
+  const headerActions = !isComposing ? (
+    <Button
+      variant='primary'
+      icon={<PlusIcon />}
+      onClick={() => {
+        startOver();
+        setIsComposing(true);
+      }}
+    >
+      Submit Intake
+    </Button>
+  ) : isReceived ? (
+    <Button
+      variant='secondary'
+      icon={<PlusIcon />}
+      onClick={() => {
+        startOver();
+        setIsComposing(true);
+      }}
+    >
+      Submit another report
+    </Button>
+  ) : undefined;
+
+  const cancelCompose = () => {
+    startOver();
+    setIsComposing(false);
+  };
 
   return (
     <>
       <LightwellPageHeader
-        title='Upload to Beacon'
+        title='Beacon Intake'
         description='Submit vulnerability findings using the shared JSON / OpenAPI intake contract—without emailing files to your STAM.'
-        {...(isReceived && {
-          actions: (
-            <Button variant='secondary' icon={<PlusIcon />} onClick={startOver}>
-              Submit another report
-            </Button>
-          ),
-        })}
+        {...(headerActions ? { actions: headerActions } : {})}
       />
       <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
-        <Stack hasGutter style={{ maxWidth: 1200 }}>
-          <StackItem>
-            <AccessBoundaryNote audience='customer' />
-          </StackItem>
-          <StackItem>
-            <BeaconUploadCard {...uploadProps} />
-          </StackItem>
+        <Stack hasGutter>
+          {isComposing ? (
+            <StackItem>
+              <BeaconUploadCard
+                {...uploadProps}
+                {...(!isReceived ? { onCancel: cancelCompose } : {})}
+              />
+            </StackItem>
+          ) : null}
           <StackItem>
             <MySubmissionsTable />
           </StackItem>
@@ -192,10 +217,7 @@ const IncomingUploadsPage = () => (
       description='Review Received customer vulnerability submissions. Accept for processing after semantic review—before JSM automation.'
     />
     <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
-      <Stack hasGutter style={{ maxWidth: 1200 }}>
-        <StackItem>
-          <AccessBoundaryNote audience='stam' />
-        </StackItem>
+      <Stack hasGutter>
         <StackItem>
           <IncomingUploadsPanel />
         </StackItem>
@@ -210,12 +232,15 @@ const App = () => {
   return (
     <>
       <PreviewBanner />
-      <Page>
+      <Page sidebar={null}>
         <RoleToggle role={role} onChange={setRole} />
+        <div className={`${spacing.pxLg} ${spacing.pbSm}`}>
+          <AccessBoundaryNote audience={role === 'stam' ? 'stam' : 'customer'} />
+        </div>
         <TopNav role={role} />
         <Routes>
           <Route path='/' element={<RepositoriesPlaceholder />} />
-          <Route path='/beacon' element={<BeaconPlaceholder role={role} />} />
+          <Route path='/beacon' element={<BeaconPlaceholder />} />
           <Route
             path='/beacon/upload'
             element={role === 'customer' ? <UploadPage /> : <Navigate to='/beacon/incoming' replace />}

@@ -10,6 +10,13 @@ import IncomingUploadsPanel from './components/IncomingUploadsPanel';
  */
 const BeaconIncomingUploads = () => (
   <>
+    <PageSection
+      aria-label='Incoming uploads access boundary'
+      hasBodyWrapper={false}
+      className={`${spacing.pb_0} ${spacing.pxLg} ${spacing.plXs}`}
+    >
+      <AccessBoundaryNote audience='stam' />
+    </PageSection>
     <LightwellPageHeader
       title='Incoming uploads'
       ouiaId='lightwell-beacon-incoming-header'
@@ -21,10 +28,7 @@ const BeaconIncomingUploads = () => (
       className={`${spacing.pt_0} ${spacing.pbLg} ${spacing.pxLg} ${spacing.plXs}`}
       data-ouia-component-id='lightwell-beacon-incoming-page'
     >
-      <Stack hasGutter style={{ maxWidth: 1200 }}>
-        <StackItem>
-          <AccessBoundaryNote audience='stam' />
-        </StackItem>
+      <Stack hasGutter>
         <StackItem>
           <Content component='small'>
             Original file retrieval uses an approved process with audit records (out of this

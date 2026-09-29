@@ -60,7 +60,7 @@ const LightwellTopNav = () => {
     },
     {
       key: 'beaconUpload',
-      label: 'Upload to Beacon',
+      label: 'Beacon Intake',
       visible: beaconEnabled,
       isActive: (path) => path.includes('/beacon/upload'),
       onClick: () => navigateTo('beaconUpload'),

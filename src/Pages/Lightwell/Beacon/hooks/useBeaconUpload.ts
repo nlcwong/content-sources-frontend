@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 
 import { addBeaconSubmission } from '../utils/beaconSubmissionsStore';
 import {
+  isJsonFilename,
   isPocArchiveFilename,
   validateVulnerabilitySubmissionJson,
   type StructuralValidationError,
@@ -15,6 +16,21 @@ import {
 
 const MOCK_VALIDATE_DELAY_MS = 900;
 
+const readFileAsText = async (file: File): Promise<string> => {
+  if (typeof file.text === 'function') {
+    return file.text();
+  }
+
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      resolve(typeof reader.result === 'string' ? reader.result : '');
+    };
+    reader.onerror = () => reject(new Error('read-failed'));
+    reader.readAsText(file);
+  });
+};
+
 export type BeaconUploadCardProps = {
   step: BeaconUploadStep;
   jsonText: string;
@@ -25,12 +41,14 @@ export type BeaconUploadCardProps = {
   submissionId?: string;
   findingCount?: number;
   onJsonTextChange: (value: string) => void;
-  onJsonFileAccepted: (files: File[]) => void;
-  onPocFileAccepted: (files: File[]) => void;
+  onFilesAccepted: (files: File[]) => void | Promise<void>;
+  onClearJson: () => void;
   onClearPoc: () => void;
   onSubmit: () => void;
   onRetry: () => void;
   onStartOver: () => void;
+  /** When set, shows Cancel next to Submit for structural validation. */
+  onCancel?: () => void;
 };
 
 /**
@@ -64,63 +82,83 @@ export const useBeaconUpload = () => {
 
   const onJsonTextChange = (value: string) => {
     setJsonText(value);
+    setJsonFilename(undefined);
     if (step === 'error' || step === 'received') {
       setStep('select');
       resetOutcome();
     }
   };
 
-  const onJsonFileAccepted = useCallback((files: File[]) => {
-    const selected = files[0];
-    if (!selected) return;
-
-    if (selected.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES) {
-      setProcessError(
-        `JSON file exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
-      );
-      setStep('error');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      const text = typeof reader.result === 'string' ? reader.result : '';
-      setJsonText(text);
-      setJsonFilename(selected.name);
+  const onClearJson = () => {
+    setJsonText('');
+    setJsonFilename(undefined);
+    if (step === 'error' || step === 'received') {
       setStep('select');
       resetOutcome();
-    };
-    reader.onerror = () => {
-      setProcessError('Could not read the JSON file. Try pasting the contents instead.');
-      setStep('error');
-    };
-    reader.readAsText(selected);
-  }, []);
+    }
+  };
 
-  const onPocFileAccepted = useCallback((files: File[]) => {
-    const selected = files[0];
-    if (!selected) return;
+  const onClearPoc = () => setPocFile(undefined);
 
-    if (selected.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES) {
+  const onFilesAccepted = useCallback(async (files: File[]) => {
+    if (!files.length) return;
+
+    const jsonFiles = files.filter((file) => isJsonFilename(file.name));
+    const pocFiles = files.filter((file) => isPocArchiveFilename(file.name));
+    const unknown = files.filter(
+      (file) => !isJsonFilename(file.name) && !isPocArchiveFilename(file.name),
+    );
+
+    if (unknown.length) {
       setProcessError(
-        `POC archive exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
+        `Unsupported file type: ${unknown.map((file) => file.name).join(', ')}. Use a .json findings file and an optional .tar / .tar.gz / .tgz POC archive.`,
       );
       setStep('error');
       return;
     }
 
-    if (!isPocArchiveFilename(selected.name)) {
-      setProcessError('POC package must be a .tar, .tar.gz, or .tgz archive.');
+    if (jsonFiles.length > 1) {
+      setProcessError('Upload only one vulnerability findings JSON file.');
       setStep('error');
       return;
     }
 
-    setPocFile(selected);
-    setProcessError(undefined);
-    if (step === 'error') setStep('select');
-  }, [step]);
+    if (pocFiles.length > 1) {
+      setProcessError('Upload only one POC archive.');
+      setStep('error');
+      return;
+    }
 
-  const onClearPoc = () => setPocFile(undefined);
+    const oversized = [...jsonFiles, ...pocFiles].find(
+      (file) => file.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES,
+    );
+    if (oversized) {
+      setProcessError(
+        `${oversized.name} exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
+      );
+      setStep('error');
+      return;
+    }
+
+    try {
+      if (jsonFiles[0]) {
+        const text = await readFileAsText(jsonFiles[0]);
+        setJsonText(text);
+        setJsonFilename(jsonFiles[0].name);
+      }
+      if (pocFiles[0]) {
+        setPocFile(pocFiles[0]);
+      }
+      setProcessError(undefined);
+      setStructuralErrors([]);
+      setSubmissionId(undefined);
+      setFindingCount(undefined);
+      setStep('select');
+    } catch {
+      setProcessError('Could not read the JSON file. Try pasting the contents instead.');
+      setStep('error');
+    }
+  }, []);
 
   const runValidation = useCallback(() => {
     resetOutcome();
@@ -152,7 +190,7 @@ export const useBeaconUpload = () => {
   const onSubmit = () => {
     if (!jsonText.trim()) {
       setStructuralErrors([
-        { path: '$', message: 'Paste or upload a vulnerability findings JSON payload first.' },
+        { path: '$', message: 'Upload or paste a vulnerability findings JSON payload first.' },
       ]);
       setStep('error');
       return;
@@ -176,8 +214,8 @@ export const useBeaconUpload = () => {
     submissionId,
     findingCount,
     onJsonTextChange,
-    onJsonFileAccepted,
-    onPocFileAccepted,
+    onFilesAccepted,
+    onClearJson,
     onClearPoc,
     onSubmit,
     onRetry,

@@ -4,6 +4,7 @@ import {
   Card,
   CardBody,
   Content,
+  ExpandableSection,
   Flex,
   FlexItem,
   Form,
@@ -20,6 +21,7 @@ import {
 } from '@patternfly/react-core';
 import { CheckCircleIcon, UploadIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
+import { useState } from 'react';
 
 import type { BeaconUploadCardProps } from '../hooks/useBeaconUpload';
 import { BEACON_UPLOAD_MAX_FILE_SIZE_MB } from '../uploadTypes';
@@ -48,13 +50,17 @@ const BeaconUploadCard = ({
   submissionId,
   findingCount,
   onJsonTextChange,
-  onJsonFileAccepted,
-  onPocFileAccepted,
+  onFilesAccepted,
+  onClearJson,
   onClearPoc,
   onSubmit,
   onRetry,
   onStartOver,
+  onCancel,
 }: BeaconUploadCardProps) => {
+  const [isPasteExpanded, setIsPasteExpanded] = useState(false);
+  const hasJsonSelection = Boolean(jsonFilename || jsonText.trim());
+
   if (step === 'validating') {
     return (
       <Card isGlass>
@@ -134,87 +140,116 @@ const BeaconUploadCard = ({
   return (
     <Card isGlass>
       <CardBody className={spacing.pXl}>
-        <SubmissionInstructions />
         <Flex direction={{ default: 'column' }} gap={{ default: 'gapLg' }}>
           <FlexItem>
-            <Title headingLevel='h3' size='md'>
-              Vulnerability findings (JSON)
-            </Title>
+            <Flex
+              alignItems={{ default: 'alignItemsCenter' }}
+              gap={{ default: 'gapXs' }}
+              className={spacing.mbSm}
+            >
+              <FlexItem>
+                <Title headingLevel='h3' size='md'>
+                  Choose file(s) to submit
+                </Title>
+              </FlexItem>
+              <FlexItem>
+                <SubmissionInstructions />
+              </FlexItem>
+            </Flex>
             <Content component='small' className={spacing.mbSm}>
-              Paste JSON or upload a <Content component='code'>.json</Content> file. Maximum size:{' '}
-              {BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB.
+              Drop or choose a vulnerability findings <Content component='code'>.json</Content> file
+              and an optional POC archive (
+              <Content component='code'>POC-Reports_YYYY-MM-DD.tar.gz</Content>
+              ). Maximum size per file: {BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB.
             </Content>
-            <Form>
-              <FormGroup label='Findings JSON' fieldId='beacon-findings-json'>
-                <TextArea
-                  id='beacon-findings-json'
-                  aria-label='Vulnerability findings JSON'
-                  value={jsonText}
-                  onChange={(_event, value) => onJsonTextChange(value)}
-                  rows={12}
-                  resizeOrientation='vertical'
-                  placeholder={SAMPLE_JSON}
-                />
-              </FormGroup>
-            </Form>
-            {jsonFilename ? (
-              <Content component='small' className={spacing.mtSm}>
-                Loaded from file: {jsonFilename}
-              </Content>
-            ) : null}
-            <div className={spacing.mtMd}>
-              <MultipleFileUpload
-                dropzoneProps={{
-                  multiple: false,
-                  maxFiles: 1,
-                  accept: { 'application/json': ['.json'] },
-                  onDropAccepted: onJsonFileAccepted,
-                }}
-              >
-                <MultipleFileUploadMain
-                  titleIcon={<UploadIcon />}
-                  titleText='Or drag and drop a .json file'
-                  titleTextSeparator='or'
-                  browseButtonText='Choose JSON file'
-                />
-              </MultipleFileUpload>
-            </div>
-          </FlexItem>
+            <MultipleFileUpload
+              dropzoneProps={{
+                multiple: true,
+                maxFiles: 2,
+                accept: {
+                  'application/json': ['.json'],
+                  'application/gzip': ['.tar.gz', '.tgz'],
+                  'application/x-tar': ['.tar'],
+                  'application/x-gtar': ['.tar.gz'],
+                },
+                onDropAccepted: onFilesAccepted,
+              }}
+            >
+              <MultipleFileUploadMain
+                titleIcon={<UploadIcon />}
+                titleText='Drag and drop findings JSON and optional POC archive'
+                titleTextSeparator='or'
+                browseButtonText='Choose files'
+                infoText='.json required · .tar / .tar.gz / .tgz optional'
+              />
+            </MultipleFileUpload>
 
-          <FlexItem>
-            <Title headingLevel='h3' size='md'>
-              Reproducer package (optional)
-            </Title>
-            <Content component='small' className={spacing.mbSm}>
-              One archive named like <Content component='code'>POC-Reports_YYYY-MM-DD.tar.gz</Content>
-              . Name each file inside for its vulnerability_id.
-            </Content>
-            {pocFile ? (
-              <HelperText>
-                <HelperTextItem>
-                  Attached: {pocFile.name}{' '}
-                  <Button variant='link' isInline onClick={onClearPoc}>
-                    Remove
-                  </Button>
-                </HelperTextItem>
+            {hasJsonSelection || pocFile ? (
+              <HelperText className={spacing.mtMd} aria-label='Selected submission files'>
+                {hasJsonSelection ? (
+                  <HelperTextItem>
+                    Findings JSON:{' '}
+                    {jsonFilename ?? 'pasted contents'}{' '}
+                    <Button variant='link' isInline onClick={onClearJson}>
+                      Remove
+                    </Button>
+                  </HelperTextItem>
+                ) : (
+                  <HelperTextItem>Findings JSON: not selected (required)</HelperTextItem>
+                )}
+                {pocFile ? (
+                  <HelperTextItem>
+                    POC archive: {pocFile.name}{' '}
+                    <Button variant='link' isInline onClick={onClearPoc}>
+                      Remove
+                    </Button>
+                  </HelperTextItem>
+                ) : (
+                  <HelperTextItem>POC archive: none (optional)</HelperTextItem>
+                )}
               </HelperText>
-            ) : (
-              <MultipleFileUpload
-                dropzoneProps={{
-                  multiple: false,
-                  maxFiles: 1,
-                  onDropAccepted: onPocFileAccepted,
-                }}
-              >
-                <MultipleFileUploadMain
-                  titleIcon={<UploadIcon />}
-                  titleText='Drag and drop a POC archive'
-                  titleTextSeparator='or'
-                  browseButtonText='Choose archive'
-                  infoText='.tar, .tar.gz, or .tgz'
-                />
-              </MultipleFileUpload>
-            )}
+            ) : null}
+
+            <ExpandableSection
+              className={spacing.mtMd}
+              toggleText='Paste JSON instead'
+              isExpanded={isPasteExpanded}
+              onToggle={(_event, expanded) => {
+                setIsPasteExpanded(expanded);
+                if (expanded) {
+                  // Focus after ExpandableSection removes the hidden attribute.
+                  window.requestAnimationFrame(() => {
+                    document.getElementById('beacon-findings-json')?.focus();
+                  });
+                }
+              }}
+            >
+              <Form>
+                <FormGroup label='Findings JSON' fieldId='beacon-findings-json'>
+                  <HelperText className={spacing.mbSm}>
+                    <HelperTextItem>
+                      Empty box — paste or type JSON here.{' '}
+                      <Button
+                        variant='link'
+                        isInline
+                        onClick={() => onJsonTextChange(SAMPLE_JSON)}
+                      >
+                        Insert sample
+                      </Button>
+                    </HelperTextItem>
+                  </HelperText>
+                  <TextArea
+                    id='beacon-findings-json'
+                    aria-label='Vulnerability findings JSON'
+                    value={jsonText}
+                    onChange={(_event, value) => onJsonTextChange(value)}
+                    rows={12}
+                    resizeOrientation='vertical'
+                    placeholder='Paste vulnerability findings JSON…'
+                  />
+                </FormGroup>
+              </Form>
+            </ExpandableSection>
           </FlexItem>
 
           {showStructuralErrors ? (
@@ -260,14 +295,29 @@ const BeaconUploadCard = ({
           ) : null}
 
           <FlexItem>
-            <Button
-              variant='primary'
-              onClick={onSubmit}
-              isDisabled={!jsonText.trim()}
-              ouiaId='lightwell-beacon-submit'
-            >
-              Submit for structural validation
-            </Button>
+            <Flex gap={{ default: 'gapMd' }}>
+              <FlexItem>
+                <Button
+                  variant='primary'
+                  onClick={onSubmit}
+                  isDisabled={!jsonText.trim()}
+                  ouiaId='lightwell-beacon-submit'
+                >
+                  Submit for structural validation
+                </Button>
+              </FlexItem>
+              {onCancel ? (
+                <FlexItem>
+                  <Button
+                    variant='secondary'
+                    onClick={onCancel}
+                    ouiaId='lightwell-beacon-cancel-intake'
+                  >
+                    Cancel
+                  </Button>
+                </FlexItem>
+              ) : null}
+            </Flex>
           </FlexItem>
         </Flex>
       </CardBody>
