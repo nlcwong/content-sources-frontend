@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
+  Alert,
+  AlertActionCloseButton,
   Banner,
   Button,
   Card,
   CardBody,
+  Content,
   Flex,
   FlexItem,
   Page,
@@ -152,32 +155,24 @@ const BeaconPlaceholder = () => (
 );
 
 const UploadPage = () => {
-  const { isReceived, uploadProps, startOver } = useBeaconUpload();
+  const { isReceived, uploadProps, startOver, submissionId, findingCount } = useBeaconUpload();
   const [isComposing, setIsComposing] = useState(false);
+  const [successReceipt, setSuccessReceipt] = useState<{
+    submissionId: string;
+    findingCount: number;
+  } | null>(null);
 
-  const headerActions = !isComposing ? (
-    <Button
-      variant='primary'
-      icon={<PlusIcon />}
-      onClick={() => {
-        startOver();
-        setIsComposing(true);
-      }}
-    >
-      Submit Intake
-    </Button>
-  ) : isReceived ? (
-    <Button
-      variant='secondary'
-      icon={<PlusIcon />}
-      onClick={() => {
-        startOver();
-        setIsComposing(true);
-      }}
-    >
-      Submit another report
-    </Button>
-  ) : undefined;
+  useEffect(() => {
+    if (!isReceived || !submissionId) {
+      return;
+    }
+    setSuccessReceipt({
+      submissionId,
+      findingCount: findingCount ?? 0,
+    });
+    setIsComposing(false);
+    startOver();
+  }, [isReceived, submissionId, findingCount, startOver]);
 
   const cancelCompose = () => {
     startOver();
@@ -189,16 +184,52 @@ const UploadPage = () => {
       <LightwellPageHeader
         title='Beacon Intake'
         description='Submit vulnerability findings using the shared JSON / OpenAPI intake contract—without emailing files to your STAM.'
-        {...(headerActions ? { actions: headerActions } : {})}
+        {...(!isComposing && {
+          actions: (
+            <Button
+              variant='primary'
+              icon={<PlusIcon />}
+              onClick={() => {
+                setSuccessReceipt(null);
+                startOver();
+                setIsComposing(true);
+              }}
+            >
+              Submit Intake
+            </Button>
+          ),
+        })}
       />
       <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
         <Stack hasGutter>
           {isComposing ? (
             <StackItem>
-              <BeaconUploadCard
-                {...uploadProps}
-                {...(!isReceived ? { onCancel: cancelCompose } : {})}
-              />
+              <BeaconUploadCard {...uploadProps} onCancel={cancelCompose} />
+            </StackItem>
+          ) : null}
+          {successReceipt ? (
+            <StackItem>
+              <Alert
+                variant='success'
+                isInline
+                title='Submission received'
+                actionClose={
+                  <AlertActionCloseButton
+                    title='Close success alert'
+                    onClose={() => setSuccessReceipt(null)}
+                  />
+                }
+              >
+                <Content component='p'>
+                  Durable reference:{' '}
+                  <Content component='code'>{successReceipt.submissionId}</Content>.{' '}
+                  {successReceipt.findingCount} finding
+                  {successReceipt.findingCount === 1 ? '' : 's'} passed structural checks and{' '}
+                  {successReceipt.findingCount === 1 ? 'is' : 'are'} now <strong>Received</strong>.
+                  This does <strong>not</strong> mean LW-STAM review is complete or that the
+                  submission is accepted for processing.
+                </Content>
+              </Alert>
             </StackItem>
           ) : null}
           <StackItem>

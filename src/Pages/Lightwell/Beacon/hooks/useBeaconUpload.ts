@@ -228,5 +228,6 @@ export const useBeaconUpload = () => {
     startOver,
     isReceived: step === 'received',
     submissionId,
+    findingCount,
   };
 };

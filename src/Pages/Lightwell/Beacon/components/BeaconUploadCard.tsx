@@ -19,7 +19,7 @@ import {
   TextArea,
   Title,
 } from '@patternfly/react-core';
-import { CheckCircleIcon, UploadIcon } from '@patternfly/react-icons';
+import { UploadIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import { useState } from 'react';
 
@@ -47,15 +47,12 @@ const BeaconUploadCard = ({
   pocFile,
   structuralErrors,
   processError,
-  submissionId,
-  findingCount,
   onJsonTextChange,
   onFilesAccepted,
   onClearJson,
   onClearPoc,
   onSubmit,
   onRetry,
-  onStartOver,
   onCancel,
 }: BeaconUploadCardProps) => {
   const [isPasteExpanded, setIsPasteExpanded] = useState(false);
@@ -90,49 +87,9 @@ const BeaconUploadCard = ({
     );
   }
 
+  // Parent closes the panel and shows a page-level success alert on Received.
   if (step === 'received') {
-    return (
-      <Card isGlass>
-        <CardBody className={spacing.p_2xl}>
-          <Flex
-            direction={{ default: 'column' }}
-            gap={{ default: 'gapMd' }}
-            alignItems={{ default: 'alignItemsCenter' }}
-          >
-            <FlexItem>
-              <CheckCircleIcon color='var(--pf-t--global--icon--color--status--success--default)' />
-            </FlexItem>
-            <FlexItem>
-              <Title headingLevel='h3' size='md'>
-                Submission received
-              </Title>
-            </FlexItem>
-            <FlexItem>
-              <Content component='p'>
-                Durable reference:{' '}
-                <Content component='code' data-ouia-component-id='lightwell-beacon-submission-id'>
-                  {submissionId}
-                </Content>
-              </Content>
-            </FlexItem>
-            <FlexItem>
-              <Content component='p'>
-                {findingCount ?? 0} finding
-                {(findingCount ?? 0) === 1 ? '' : 's'}
-                {pocFile ? ` with POC archive ${pocFile.name}` : ''} passed structural checks and is
-                now <strong>Received</strong>. This does <strong>not</strong> mean LW-STAM review is
-                complete or that the submission is accepted for processing.
-              </Content>
-            </FlexItem>
-            <FlexItem>
-              <Button variant='secondary' onClick={onStartOver} ouiaId='lightwell-beacon-upload-another'>
-                Submit another report
-              </Button>
-            </FlexItem>
-          </Flex>
-        </CardBody>
-      </Card>
-    );
+    return null;
   }
 
   const showStructuralErrors = step === 'error' && structuralErrors.length > 0;
