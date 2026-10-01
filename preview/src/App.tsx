@@ -155,24 +155,24 @@ const BeaconPlaceholder = () => (
 );
 
 const UploadPage = () => {
-  const { isReceived, uploadProps, startOver, submissionId, findingCount } = useBeaconUpload();
+  const { isReceived, uploadProps, startOver, submissionIds, findingCount } = useBeaconUpload();
   const [isComposing, setIsComposing] = useState(false);
   const [successReceipt, setSuccessReceipt] = useState<{
-    submissionId: string;
+    submissionIds: string[];
     findingCount: number;
   } | null>(null);
 
   useEffect(() => {
-    if (!isReceived || !submissionId) {
+    if (!isReceived || !submissionIds?.length) {
       return;
     }
     setSuccessReceipt({
-      submissionId,
+      submissionIds,
       findingCount: findingCount ?? 0,
     });
     setIsComposing(false);
     startOver();
-  }, [isReceived, submissionId, findingCount, startOver]);
+  }, [isReceived, submissionIds, findingCount, startOver]);
 
   const cancelCompose = () => {
     startOver();
@@ -212,7 +212,11 @@ const UploadPage = () => {
               <Alert
                 variant='success'
                 isInline
-                title='Submission received'
+                title={
+                  successReceipt.submissionIds.length === 1
+                    ? 'Submission received'
+                    : 'Submissions received'
+                }
                 actionClose={
                   <AlertActionCloseButton
                     title='Close success alert'
@@ -221,13 +225,20 @@ const UploadPage = () => {
                 }
               >
                 <Content component='p'>
-                  Durable reference:{' '}
-                  <Content component='code'>{successReceipt.submissionId}</Content>.{' '}
-                  {successReceipt.findingCount} finding
+                  Created {successReceipt.submissionIds.length} submission
+                  {successReceipt.submissionIds.length === 1 ? '' : 's'} (
+                  {successReceipt.submissionIds.map((id, index) => (
+                    <span key={id}>
+                      {index > 0 ? ', ' : ''}
+                      <Content component='code'>{id}</Content>
+                    </span>
+                  ))}
+                  ). {successReceipt.findingCount} finding
                   {successReceipt.findingCount === 1 ? '' : 's'} passed structural checks and{' '}
-                  {successReceipt.findingCount === 1 ? 'is' : 'are'} now <strong>Received</strong>.
-                  This does <strong>not</strong> mean LW-STAM review is complete or that the
-                  submission is accepted for processing.
+                  {successReceipt.findingCount === 1 ? 'is' : 'are'} now{' '}
+                  <strong>Submitted, waiting for validation</strong>. This does{' '}
+                  <strong>not</strong> mean LW-STAM review is complete or that the submissions are
+                  accepted.
                 </Content>
               </Alert>
             </StackItem>
@@ -245,10 +256,16 @@ const IncomingUploadsPage = () => (
   <>
     <LightwellPageHeader
       title='Incoming uploads'
-      description='Review customer vulnerability submissions. Begin processing, then Approve into the pipeline queue or request more information—before JSM automation.'
+      description='Review customer vulnerability submissions. Download findings to begin structural validation review—before JSM automation.'
     />
     <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
       <Stack hasGutter>
+        <StackItem>
+          <Content component='small'>
+            Download sets the customer-visible status to Validating…. Accepted and Rejected outcomes
+            are reserved for a later STAM step in this wireframe.
+          </Content>
+        </StackItem>
         <StackItem>
           <IncomingUploadsPanel />
         </StackItem>

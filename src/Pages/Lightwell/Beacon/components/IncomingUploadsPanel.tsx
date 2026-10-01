@@ -6,13 +6,15 @@ import {
   CardHeader,
   CardTitle,
   Content,
-  Flex,
-  FlexItem,
 } from '@patternfly/react-core';
+import { DownloadIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import { Table, TableVariant, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 
-import type { BeaconSubmission } from '../uploadTypes';
+import {
+  BEACON_STATUS_VALIDATING,
+  type BeaconSubmission,
+} from '../uploadTypes';
 import {
   getStamVisibleBeaconSubmissions,
   readBeaconSubmissions,
@@ -28,62 +30,48 @@ const formatUploadedAt = (iso: string) => {
   }
 };
 
-const pipelineNote = (submission: BeaconSubmission) => {
-  if (submission.status === 'Added to pipeline queue') {
-    return submission.pipelineAddedAt
-      ? `Added ${formatUploadedAt(submission.pipelineAddedAt)}`
-      : 'Added to pipeline queue';
-  }
-  if (submission.status === 'More information requested') {
-    return 'Halted — awaiting customer response (out of band)';
-  }
-  return '—';
+const triggerBrowserDownload = (filename: string, contents: string, mimeType: string) => {
+  const blob = new Blob([contents], { type: mimeType });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  URL.revokeObjectURL(url);
 };
 
-const SubmissionActions = ({ submission }: { submission: BeaconSubmission }) => {
-  if (submission.status === 'Received') {
-    return (
-      <Button
-        variant='secondary'
-        size='sm'
-        onClick={() => updateBeaconSubmissionStatus(submission.id, 'Processing')}
-        ouiaId={`lightwell-beacon-begin-${submission.id}`}
-      >
-        Begin processing
-      </Button>
-    );
-  }
+const downloadSubmissionFiles = (submission: BeaconSubmission) => {
+  const jsonName = submission.jsonFilename ?? `${submission.id}-findings.json`;
+  triggerBrowserDownload(
+    jsonName,
+    JSON.stringify(
+      {
+        note: 'Prototype placeholder — original payload is not persisted in this wireframe.',
+        submission_id: submission.id,
+        finding_count: submission.findingCount,
+      },
+      null,
+      2,
+    ),
+    'application/json',
+  );
 
-  if (submission.status === 'Processing') {
-    return (
-      <Flex gap={{ default: 'gapSm' }} flexWrap={{ default: 'wrap' }}>
-        <FlexItem>
-          <Button
-            variant='primary'
-            size='sm'
-            onClick={() => updateBeaconSubmissionStatus(submission.id, 'Added to pipeline queue')}
-            ouiaId={`lightwell-beacon-approve-${submission.id}`}
-          >
-            Approve
-          </Button>
-        </FlexItem>
-        <FlexItem>
-          <Button
-            variant='secondary'
-            size='sm'
-            onClick={() =>
-              updateBeaconSubmissionStatus(submission.id, 'More information requested')
-            }
-            ouiaId={`lightwell-beacon-more-info-${submission.id}`}
-          >
-            Request more information
-          </Button>
-        </FlexItem>
-      </Flex>
-    );
+  if (submission.pocFilenames.length > 0) {
+    submission.pocFilenames.forEach((pocFilename) => {
+      triggerBrowserDownload(
+        pocFilename,
+        `Prototype placeholder reproducer for ${submission.id}\n`,
+        'application/octet-stream',
+      );
+    });
   }
+};
 
-  return <Content component='small'>—</Content>;
+const onDownload = (submission: BeaconSubmission) => {
+  downloadSubmissionFiles(submission);
+  if (submission.status !== BEACON_STATUS_VALIDATING) {
+    updateBeaconSubmissionStatus(submission.id, BEACON_STATUS_VALIDATING);
+  }
 };
 
 /**
@@ -101,10 +89,9 @@ const IncomingUploadsPanel = () => {
       </CardHeader>
       <CardBody>
         <Content component='small'>
-          Begin processing after intake. From Processing, Approve sends the submission to the
-          pipeline queue (row stays visible with an added timestamp), or Request more information
-          halts progress until the customer responds out of band. No JSM automation in this
-          wireframe.
+          Download the findings JSON (and reproducer when present) to begin review. Download sets
+          the customer-visible status to Validating…. Accepted and Rejected outcomes are reserved
+          for a later step in this wireframe.
         </Content>
         {visible.length === 0 ? (
           <Content component='p' className={spacing.mtMd}>
@@ -120,7 +107,6 @@ const IncomingUploadsPanel = () => {
                 <Th>Submitter</Th>
                 <Th>Reference</Th>
                 <Th>Status</Th>
-                <Th>Pipeline / note</Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
@@ -135,9 +121,15 @@ const IncomingUploadsPanel = () => {
                   <Td dataLabel='Submitter'>{submission.submitterName}</Td>
                   <Td dataLabel='Reference'>{submission.submitterReference}</Td>
                   <Td dataLabel='Status'>{submission.status}</Td>
-                  <Td dataLabel='Pipeline / note'>{pipelineNote(submission)}</Td>
                   <Td dataLabel='Actions'>
-                    <SubmissionActions submission={submission} />
+                    <Button
+                      variant='plain'
+                      aria-label={`Download files for ${submission.id}`}
+                      onClick={() => onDownload(submission)}
+                      ouiaId={`lightwell-beacon-download-${submission.id}`}
+                    >
+                      <DownloadIcon />
+                    </Button>
                   </Td>
                 </Tr>
               ))}

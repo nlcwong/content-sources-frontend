@@ -20,9 +20,10 @@ const SubmissionInstructions = () => (
         </Content>
         <List>
           <ListItem>
-            Upload a findings <Content component='code'>.json</Content> (and optional POC archive) in
-            one drop, or paste JSON. Payload shape: an array of findings or an object with a{' '}
-            <Content component='code'>findings</Content> array.
+            Upload one or more findings <Content component='code'>.json</Content> files via
+            drag-and-drop or Choose files. Each JSON becomes its own submission. Payload shape: an
+            array of findings or an object with a <Content component='code'>findings</Content>{' '}
+            array.
           </ListItem>
           <ListItem>
             Required fields per finding (stub):{' '}
@@ -34,16 +35,17 @@ const SubmissionInstructions = () => (
             . Other spreadsheet columns may be optional or derived during LW-STAM review (TBD).
           </ListItem>
           <ListItem>
-            Optionally attach one POC archive named like{' '}
-            <Content component='code'>POC-Reports_YYYY-MM-DD.tar.gz</Content>. Name each reproducer
-            file for its <Content component='code'>vulnerability_id</Content>.
+            For each selected JSON, optionally attach one or more reproducer files of any type with{' '}
+            <strong>Upload reproducer file</strong>. Name each reproducer for its{' '}
+            <Content component='code'>vulnerability_id</Content> when applicable.
           </ListItem>
           <ListItem>
-            Size limit (prototype): {BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB per JSON or archive file.
+            Size limit (prototype): {BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB per file.
           </ListItem>
           <ListItem>
-            Passing structural checks shows <strong>Received</strong>. That does not mean LW-STAM
-            review or acceptance for processing is complete.
+            Passing structural checks shows{' '}
+            <strong>Submitted, waiting for validation</strong>. That does not mean LW-STAM review or
+            acceptance is complete.
           </ListItem>
         </List>
       </Content>

@@ -4,59 +4,45 @@ import {
   Card,
   CardBody,
   Content,
-  ExpandableSection,
   Flex,
   FlexItem,
-  Form,
-  FormGroup,
-  HelperText,
-  HelperTextItem,
   List,
   ListItem,
   MultipleFileUpload,
   MultipleFileUploadMain,
   Spinner,
-  TextArea,
   Title,
 } from '@patternfly/react-core';
-import { UploadIcon } from '@patternfly/react-icons';
+import { TrashIcon, UploadIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
-import { useState } from 'react';
+import { useId, useRef } from 'react';
 
 import type { BeaconUploadCardProps } from '../hooks/useBeaconUpload';
 import { BEACON_UPLOAD_MAX_FILE_SIZE_MB } from '../uploadTypes';
 import SubmissionInstructions from './SubmissionInstructions';
 
-const SAMPLE_JSON = `{
-  "findings": [
-    {
-      "vulnerability_id": "VULN-001",
-      "packageurl": "pkg:maven/org.example/lib@1.2.3",
-      "title": "Example vulnerability",
-      "description": "Short description of the finding.",
-      "cvss_severity": "High",
-      "cvss_score": 7.5
-    }
-  ]
-}`;
-
 const BeaconUploadCard = ({
   step,
-  jsonText,
-  jsonFilename,
-  pocFile,
+  pendingFiles,
   structuralErrors,
   processError,
-  onJsonTextChange,
   onFilesAccepted,
-  onClearJson,
-  onClearPoc,
+  onReproducerSelected,
+  onRemovePendingFile,
+  onRemoveReproducer,
   onSubmit,
   onRetry,
   onCancel,
 }: BeaconUploadCardProps) => {
-  const [isPasteExpanded, setIsPasteExpanded] = useState(false);
-  const hasJsonSelection = Boolean(jsonFilename || jsonText.trim());
+  const reproducerInputRef = useRef<HTMLInputElement>(null);
+  const reproducerInputId = useId();
+  const activePendingIdRef = useRef<string | null>(null);
+  const showSelectionPanel = pendingFiles.length > 0;
+
+  const openReproducerPicker = (pendingId: string) => {
+    activePendingIdRef.current = pendingId;
+    reproducerInputRef.current?.click();
+  };
 
   if (step === 'validating') {
     return (
@@ -77,8 +63,8 @@ const BeaconUploadCard = ({
             </FlexItem>
             <FlexItem>
               <Content component='small'>
-                Accepting the request for validation is not the same as Received. Semantic review
-                still happens with your LW-STAM.
+                Client-side structural checks run for each findings JSON before your STAM reviews
+                the submissions. Semantic review still happens with your LW-STAM.
               </Content>
             </FlexItem>
           </Flex>
@@ -87,7 +73,6 @@ const BeaconUploadCard = ({
     );
   }
 
-  // Parent closes the panel and shows a page-level success alert on Received.
   if (step === 'received') {
     return null;
   }
@@ -114,99 +99,156 @@ const BeaconUploadCard = ({
               </FlexItem>
             </Flex>
             <Content component='small' className={spacing.mbSm}>
-              Drop or choose a vulnerability findings <Content component='code'>.json</Content> file
-              and an optional POC archive (
-              <Content component='code'>POC-Reports_YYYY-MM-DD.tar.gz</Content>
-              ). Maximum size per file: {BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB.
+              Drop or choose one or more vulnerability findings{' '}
+              <Content component='code'>.json</Content> files. For each selected JSON, attach
+              optional reproducers (any file type, multiple allowed). Maximum size per file:{' '}
+              {BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB. Each findings JSON becomes its own submission.
             </Content>
-            <MultipleFileUpload
-              dropzoneProps={{
-                multiple: true,
-                maxFiles: 2,
-                accept: {
-                  'application/json': ['.json'],
-                  'application/gzip': ['.tar.gz', '.tgz'],
-                  'application/x-tar': ['.tar'],
-                  'application/x-gtar': ['.tar.gz'],
-                },
-                onDropAccepted: onFilesAccepted,
-              }}
-            >
-              <MultipleFileUploadMain
-                titleIcon={<UploadIcon />}
-                titleText='Drag and drop findings JSON and optional POC archive'
-                titleTextSeparator='or'
-                browseButtonText='Choose files'
-                infoText='.json required · .tar / .tar.gz / .tgz optional'
-              />
-            </MultipleFileUpload>
 
-            {hasJsonSelection || pocFile ? (
-              <HelperText className={spacing.mtMd} aria-label='Selected submission files'>
-                {hasJsonSelection ? (
-                  <HelperTextItem>
-                    Findings JSON:{' '}
-                    {jsonFilename ?? 'pasted contents'}{' '}
-                    <Button variant='link' isInline onClick={onClearJson}>
-                      Remove
-                    </Button>
-                  </HelperTextItem>
-                ) : (
-                  <HelperTextItem>Findings JSON: not selected (required)</HelperTextItem>
-                )}
-                {pocFile ? (
-                  <HelperTextItem>
-                    POC archive: {pocFile.name}{' '}
-                    <Button variant='link' isInline onClick={onClearPoc}>
-                      Remove
-                    </Button>
-                  </HelperTextItem>
-                ) : (
-                  <HelperTextItem>POC archive: none (optional)</HelperTextItem>
-                )}
-              </HelperText>
-            ) : null}
-
-            <ExpandableSection
-              className={spacing.mtMd}
-              toggleText='Paste JSON instead'
-              isExpanded={isPasteExpanded}
-              onToggle={(_event, expanded) => {
-                setIsPasteExpanded(expanded);
-                if (expanded) {
-                  // Focus after ExpandableSection removes the hidden attribute.
-                  window.requestAnimationFrame(() => {
-                    document.getElementById('beacon-findings-json')?.focus();
-                  });
-                }
-              }}
+            <Flex
+              gap={{ default: 'gapLg' }}
+              alignItems={{ default: 'alignItemsFlexStart' }}
+              flexWrap={{ default: 'wrap' }}
             >
-              <Form>
-                <FormGroup label='Findings JSON' fieldId='beacon-findings-json'>
-                  <HelperText className={spacing.mbSm}>
-                    <HelperTextItem>
-                      Empty box — paste or type JSON here.{' '}
-                      <Button
-                        variant='link'
-                        isInline
-                        onClick={() => onJsonTextChange(SAMPLE_JSON)}
-                      >
-                        Insert sample
-                      </Button>
-                    </HelperTextItem>
-                  </HelperText>
-                  <TextArea
-                    id='beacon-findings-json'
-                    aria-label='Vulnerability findings JSON'
-                    value={jsonText}
-                    onChange={(_event, value) => onJsonTextChange(value)}
-                    rows={12}
-                    resizeOrientation='vertical'
-                    placeholder='Paste vulnerability findings JSON…'
+              <FlexItem flex={{ default: 'flex_1' }} style={{ minWidth: '16rem' }}>
+                <MultipleFileUpload
+                  dropzoneProps={{
+                    multiple: true,
+                    accept: {
+                      'application/json': ['.json'],
+                    },
+                    onDropAccepted: onFilesAccepted,
+                  }}
+                >
+                  <MultipleFileUploadMain
+                    titleIcon={<UploadIcon />}
+                    titleText='Drag and drop findings JSON files'
+                    titleTextSeparator='or'
+                    browseButtonText='Choose files'
+                    infoText='.json required · attach reproducers per file after selection'
                   />
-                </FormGroup>
-              </Form>
-            </ExpandableSection>
+                </MultipleFileUpload>
+              </FlexItem>
+
+              {showSelectionPanel ? (
+                <FlexItem flex={{ default: 'flex_1' }} style={{ minWidth: '16rem' }}>
+                  <input
+                    id={reproducerInputId}
+                    ref={reproducerInputRef}
+                    type='file'
+                    multiple
+                    hidden
+                    onChange={(event) => {
+                      const selected = event.target.files
+                        ? Array.from(event.target.files)
+                        : [];
+                      const pendingId = activePendingIdRef.current;
+                      if (pendingId) {
+                        void onReproducerSelected(pendingId, selected);
+                      }
+                      activePendingIdRef.current = null;
+                      event.target.value = '';
+                    }}
+                  />
+                  <div aria-label='Selected submission files'>
+                    <Title headingLevel='h4' size='md' className={spacing.mbSm}>
+                      Selected files ({pendingFiles.length})
+                    </Title>
+                    <ul
+                      style={{ listStyle: 'none', margin: 0, padding: 0 }}
+                      aria-label='Pending findings JSON files'
+                    >
+                      {pendingFiles.map((pending) => (
+                        <li
+                          key={pending.id}
+                          style={{
+                            marginBottom: '1rem',
+                            paddingBottom: '0.75rem',
+                            borderBottom: '1px solid var(--pf-t--global--border--color--default)',
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: 'flex',
+                              flexWrap: 'wrap',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              marginBottom: '0.5rem',
+                            }}
+                          >
+                            <Content component='p' style={{ marginBottom: 0 }}>
+                              Findings JSON:{' '}
+                              <Content component='code'>{pending.filename}</Content>
+                            </Content>
+                            <Button
+                              variant='link'
+                              isInline
+                              onClick={() => openReproducerPicker(pending.id)}
+                              ouiaId={`lightwell-beacon-upload-reproducer-${pending.id}`}
+                            >
+                              Upload reproducer file
+                            </Button>
+                            <Button
+                              variant='plain'
+                              aria-label={`Remove ${pending.filename}`}
+                              onClick={() => onRemovePendingFile(pending.id)}
+                              ouiaId={`lightwell-beacon-remove-json-${pending.id}`}
+                            >
+                              <TrashIcon />
+                            </Button>
+                          </div>
+
+                          <div className={spacing.plLg}>
+                            <Content component='small' className={spacing.mbSm}>
+                              <strong>
+                                {pending.reproducers.length > 0
+                                  ? `Reproducers (${pending.reproducers.length})`
+                                  : 'Reproducers'}
+                              </strong>
+                            </Content>
+                            {pending.reproducers.length === 0 ? (
+                              <Content component='small'>
+                                None yet — use Upload reproducer file to attach one or more files
+                                for <Content component='code'>{pending.filename}</Content>.
+                              </Content>
+                            ) : (
+                              <ul
+                                aria-label={`Reproducers for ${pending.filename}`}
+                                style={{ listStyle: 'none', margin: 0, padding: 0 }}
+                              >
+                                {pending.reproducers.map((file) => (
+                                  <li
+                                    key={file.name}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: '0.5rem',
+                                      marginBottom: '0.35rem',
+                                    }}
+                                  >
+                                    <Content component='small'>
+                                      <Content component='code'>{file.name}</Content>
+                                    </Content>
+                                    <Button
+                                      variant='plain'
+                                      aria-label={`Remove reproducer ${file.name} from ${pending.filename}`}
+                                      onClick={() => onRemoveReproducer(pending.id, file.name)}
+                                      ouiaId={`lightwell-beacon-remove-poc-${pending.id}-${file.name}`}
+                                    >
+                                      <TrashIcon />
+                                    </Button>
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </FlexItem>
+              ) : null}
+            </Flex>
           </FlexItem>
 
           {showStructuralErrors ? (
@@ -222,7 +264,7 @@ const BeaconUploadCard = ({
               >
                 <Content component='p'>
                   Fix the issues below and submit again. These are format/contract errors, not
-                  LW-STAM semantic review.
+                  LW-STAM semantic review. No submissions were created for this batch.
                 </Content>
                 <List>
                   {structuralErrors.map((error) => (
@@ -257,10 +299,10 @@ const BeaconUploadCard = ({
                 <Button
                   variant='primary'
                   onClick={onSubmit}
-                  isDisabled={!jsonText.trim()}
+                  isDisabled={pendingFiles.length === 0}
                   ouiaId='lightwell-beacon-submit'
                 >
-                  Submit for structural validation
+                  Submit for structural validation by your STAM
                 </Button>
               </FlexItem>
               {onCancel ? (

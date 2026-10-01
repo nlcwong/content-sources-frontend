@@ -2,25 +2,31 @@ export type BeaconUploadStep = 'select' | 'validating' | 'error' | 'received';
 
 /** Customer- and STAM-visible statuses with a reliable mock event. */
 export type BeaconSubmissionStatus =
-  | 'Received'
-  | 'Processing'
-  | 'Added to pipeline queue'
-  | 'More information requested';
+  | 'Submitted, waiting for validation'
+  | 'Validating...'
+  | 'Accepted, move to queue'
+  | 'Rejected, see STAM for more information';
+
+export type BeaconStatusHistoryEntry = {
+  status: BeaconSubmissionStatus;
+  at: string;
+};
 
 export type BeaconSubmission = {
   /** Durable receipt / submission reference shown to the customer. */
   id: string;
   uploadedAt: string;
   status: BeaconSubmissionStatus;
+  /** Chronological status changes for customer history. */
+  statusHistory: BeaconStatusHistoryEntry[];
   findingCount: number;
   jsonFilename?: string;
-  pocFilename?: string;
+  /** Optional reproducer file names linked to this submission. */
+  pocFilenames: string[];
   sizeBytes: number;
   /** Stub fields so STAMs can request clarification. */
   submitterName: string;
   submitterReference: string;
-  /** Set when STAM Approves and status becomes Added to pipeline queue. */
-  pipelineAddedAt?: string;
 };
 
 /** Soft size limit for JSON or POC archive (prototype). */
@@ -39,3 +45,8 @@ export const BEACON_REQUIRED_FINDING_FIELDS = [
   'cvss_severity',
   'cvss_score',
 ] as const;
+
+export const BEACON_STATUS_SUBMITTED = 'Submitted, waiting for validation' as const;
+export const BEACON_STATUS_VALIDATING = 'Validating...' as const;
+export const BEACON_STATUS_ACCEPTED = 'Accepted, move to queue' as const;
+export const BEACON_STATUS_REJECTED = 'Rejected, see STAM for more information' as const;

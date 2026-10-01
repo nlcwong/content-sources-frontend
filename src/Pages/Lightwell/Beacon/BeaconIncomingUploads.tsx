@@ -20,7 +20,7 @@ const BeaconIncomingUploads = () => (
     <LightwellPageHeader
       title='Incoming uploads'
       ouiaId='lightwell-beacon-incoming-header'
-      description='Review customer vulnerability submissions. Begin processing, then Approve into the pipeline queue or request more information—before JSM automation.'
+      description='Review customer vulnerability submissions. Download findings to begin structural validation review—before JSM automation.'
     />
     <PageSection
       aria-label='Incoming Beacon uploads'
@@ -31,9 +31,8 @@ const BeaconIncomingUploads = () => (
       <Stack hasGutter>
         <StackItem>
           <Content component='small'>
-            Original file retrieval uses an approved process with audit records (out of this
-            wireframe). Use submitter and reference columns to request clarification through an
-            approved channel.
+            Download sets the customer-visible status to Validating…. Accepted and Rejected outcomes
+            are reserved for a later STAM step in this wireframe.
           </Content>
         </StackItem>
         <StackItem>

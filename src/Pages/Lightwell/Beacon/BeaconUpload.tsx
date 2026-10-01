@@ -18,26 +18,26 @@ import MySubmissionsTable from './components/MySubmissionsTable';
 import { useBeaconUpload } from './hooks/useBeaconUpload';
 
 type SuccessReceipt = {
-  submissionId: string;
+  submissionIds: string[];
   findingCount: number;
 };
 
 const BeaconUpload = () => {
-  const { isReceived, uploadProps, startOver, submissionId, findingCount } = useBeaconUpload();
+  const { isReceived, uploadProps, startOver, submissionIds, findingCount } = useBeaconUpload();
   const [isComposing, setIsComposing] = useState(false);
   const [successReceipt, setSuccessReceipt] = useState<SuccessReceipt | null>(null);
 
   useEffect(() => {
-    if (!isReceived || !submissionId) {
+    if (!isReceived || !submissionIds?.length) {
       return;
     }
     setSuccessReceipt({
-      submissionId,
+      submissionIds,
       findingCount: findingCount ?? 0,
     });
     setIsComposing(false);
     startOver();
-  }, [isReceived, submissionId, findingCount, startOver]);
+  }, [isReceived, submissionIds, findingCount, startOver]);
 
   const cancelCompose = () => {
     startOver();
@@ -90,7 +90,11 @@ const BeaconUpload = () => {
               <Alert
                 variant='success'
                 isInline
-                title='Submission received'
+                title={
+                  successReceipt.submissionIds.length === 1
+                    ? 'Submission received'
+                    : 'Submissions received'
+                }
                 ouiaId='lightwell-beacon-intake-success'
                 actionClose={
                   <AlertActionCloseButton
@@ -100,15 +104,27 @@ const BeaconUpload = () => {
                 }
               >
                 <Content component='p'>
-                  Durable reference:{' '}
-                  <Content component='code' data-ouia-component-id='lightwell-beacon-submission-id'>
-                    {successReceipt.submissionId}
-                  </Content>
-                  . {successReceipt.findingCount} finding
+                  Created {successReceipt.submissionIds.length} submission
+                  {successReceipt.submissionIds.length === 1 ? '' : 's'} (
+                  {successReceipt.submissionIds.map((id, index) => (
+                    <span key={id}>
+                      {index > 0 ? ', ' : ''}
+                      <Content
+                        component='code'
+                        data-ouia-component-id={
+                          index === 0 ? 'lightwell-beacon-submission-id' : undefined
+                        }
+                      >
+                        {id}
+                      </Content>
+                    </span>
+                  ))}
+                  ). {successReceipt.findingCount} finding
                   {successReceipt.findingCount === 1 ? '' : 's'} passed structural checks and{' '}
                   {successReceipt.findingCount === 1 ? 'is' : 'are'} now{' '}
-                  <strong>Received</strong>. This does <strong>not</strong> mean LW-STAM review is
-                  complete or that the submission is accepted for processing.
+                  <strong>Submitted, waiting for validation</strong>. This does{' '}
+                  <strong>not</strong> mean LW-STAM review is complete or that the submissions are
+                  accepted.
                 </Content>
               </Alert>
             </StackItem>

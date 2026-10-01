@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react';
 import { Table, TableVariant, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
-import { Content, Title } from '@patternfly/react-core';
+import { Button, Content, Flex, FlexItem, Popover, Title } from '@patternfly/react-core';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 
 import type { BeaconSubmission } from '../uploadTypes';
@@ -17,11 +17,54 @@ const formatUploadedAt = (iso: string) => {
   }
 };
 
-const statusDisplay = (submission: BeaconSubmission) => {
-  if (submission.status === 'Added to pipeline queue' && submission.pipelineAddedAt) {
-    return `${submission.status} (${formatUploadedAt(submission.pipelineAddedAt)})`;
+const latestStatusLabel = (submission: BeaconSubmission) => {
+  const latest = submission.statusHistory[submission.statusHistory.length - 1];
+  if (latest) {
+    return `${latest.status} (${formatUploadedAt(latest.at)})`;
   }
   return submission.status;
+};
+
+const StatusCell = ({ submission }: { submission: BeaconSubmission }) => {
+  const history = submission.statusHistory;
+
+  return (
+    <Flex
+      gap={{ default: 'gapSm' }}
+      alignItems={{ default: 'alignItemsBaseline' }}
+      flexWrap={{ default: 'wrap' }}
+    >
+      <FlexItem>
+        <Content component='span'>{latestStatusLabel(submission)}</Content>
+      </FlexItem>
+      {history.length > 0 ? (
+        <FlexItem>
+          <Popover
+            hasAutoWidth
+            maxWidth='28rem'
+            headerContent='Status log'
+            bodyContent={
+              <Content>
+                {history.map((entry, index) => (
+                  <div key={`${entry.status}-${entry.at}-${index}`}>
+                    {entry.status} ({formatUploadedAt(entry.at)})
+                  </div>
+                ))}
+              </Content>
+            }
+          >
+            <Button
+              variant='link'
+              isInline
+              ouiaId={`lightwell-beacon-status-log-${submission.id}`}
+            >
+              Status Log
+            </Button>
+          </Popover>
+        </FlexItem>
+      ) : null}
+    </Flex>
+  );
 };
 
 const MySubmissionsTable = () => {
@@ -33,8 +76,8 @@ const MySubmissionsTable = () => {
         My submissions
       </Title>
       <Content component='small' className={spacing.mbMd}>
-        History shows receipt and processing status. It does not include download of original JSON
-        or POC archives. More-information requests are handled out of band with your STAM.
+        The Status column shows the current status with a timestamp. Use Status Log for the full
+        history. Original JSON and reproducer archives are not available for download here.
       </Content>
       {submissions.length === 0 ? (
         <Content component='p'>
@@ -47,7 +90,7 @@ const MySubmissionsTable = () => {
               <Th>Submission ID</Th>
               <Th>Submitted</Th>
               <Th>Findings</Th>
-              <Th>POC archive</Th>
+              <Th>Reproducers</Th>
               <Th>Status</Th>
             </Tr>
           </Thead>
@@ -59,8 +102,22 @@ const MySubmissionsTable = () => {
                 </Td>
                 <Td dataLabel='Submitted'>{formatUploadedAt(submission.uploadedAt)}</Td>
                 <Td dataLabel='Findings'>{submission.findingCount}</Td>
-                <Td dataLabel='POC archive'>{submission.pocFilename ?? '—'}</Td>
-                <Td dataLabel='Status'>{statusDisplay(submission)}</Td>
+                <Td dataLabel='Reproducers'>
+                  {submission.pocFilenames.length === 0 ? (
+                    '—'
+                  ) : (
+                    <Content component='div'>
+                      {submission.pocFilenames.map((name) => (
+                        <div key={name}>
+                          <Content component='code'>{name}</Content>
+                        </div>
+                      ))}
+                    </Content>
+                  )}
+                </Td>
+                <Td dataLabel='Status'>
+                  <StatusCell submission={submission} />
+                </Td>
               </Tr>
             ))}
           </Tbody>

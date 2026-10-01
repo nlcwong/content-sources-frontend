@@ -3,7 +3,6 @@ import { useCallback, useState } from 'react';
 import { addBeaconSubmission } from '../utils/beaconSubmissionsStore';
 import {
   isJsonFilename,
-  isPocArchiveFilename,
   validateVulnerabilitySubmissionJson,
   type StructuralValidationError,
 } from '../utils/validateVulnerabilitySubmission';
@@ -31,19 +30,42 @@ const readFileAsText = async (file: File): Promise<string> => {
   });
 };
 
+const appendUniqueFiles = (existing: File[], incoming: File[]) => {
+  const names = new Set(existing.map((file) => file.name));
+  const next = [...existing];
+  incoming.forEach((file) => {
+    if (!names.has(file.name)) {
+      names.add(file.name);
+      next.push(file);
+    }
+  });
+  return next;
+};
+
+const createPendingId = () =>
+  `pending-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+
+export type PendingFindingsFile = {
+  id: string;
+  filename: string;
+  jsonText: string;
+  reproducers: File[];
+};
+
 export type BeaconUploadCardProps = {
   step: BeaconUploadStep;
-  jsonText: string;
-  jsonFilename?: string;
-  pocFile?: File;
+  pendingFiles: PendingFindingsFile[];
   structuralErrors: StructuralValidationError[];
   processError?: string;
-  submissionId?: string;
+  submissionIds?: string[];
   findingCount?: number;
-  onJsonTextChange: (value: string) => void;
   onFilesAccepted: (files: File[]) => void | Promise<void>;
-  onClearJson: () => void;
-  onClearPoc: () => void;
+  onReproducerSelected: (
+    pendingId: string,
+    files: FileList | File[] | undefined,
+  ) => void | Promise<void>;
+  onRemovePendingFile: (pendingId: string) => void;
+  onRemoveReproducer: (pendingId: string, filename: string) => void;
   onSubmit: () => void;
   onRetry: () => void;
   onStartOver: () => void;
@@ -57,81 +79,96 @@ export type BeaconUploadCardProps = {
  */
 export const useBeaconUpload = () => {
   const [step, setStep] = useState<BeaconUploadStep>('select');
-  const [jsonText, setJsonText] = useState('');
-  const [jsonFilename, setJsonFilename] = useState<string | undefined>();
-  const [pocFile, setPocFile] = useState<File | undefined>();
+  const [pendingFiles, setPendingFiles] = useState<PendingFindingsFile[]>([]);
   const [structuralErrors, setStructuralErrors] = useState<StructuralValidationError[]>([]);
   const [processError, setProcessError] = useState<string | undefined>();
-  const [submissionId, setSubmissionId] = useState<string | undefined>();
+  const [submissionIds, setSubmissionIds] = useState<string[] | undefined>();
   const [findingCount, setFindingCount] = useState<number | undefined>();
 
   const resetOutcome = () => {
     setStructuralErrors([]);
     setProcessError(undefined);
-    setSubmissionId(undefined);
+    setSubmissionIds(undefined);
     setFindingCount(undefined);
   };
 
-  const startOver = () => {
+  const startOver = useCallback(() => {
     setStep('select');
-    setJsonText('');
-    setJsonFilename(undefined);
-    setPocFile(undefined);
-    resetOutcome();
-  };
+    setPendingFiles([]);
+    setStructuralErrors([]);
+    setProcessError(undefined);
+    setSubmissionIds(undefined);
+    setFindingCount(undefined);
+  }, []);
 
-  const onJsonTextChange = (value: string) => {
-    setJsonText(value);
-    setJsonFilename(undefined);
+  const onRemovePendingFile = (pendingId: string) => {
+    setPendingFiles((current) => current.filter((file) => file.id !== pendingId));
     if (step === 'error' || step === 'received') {
       setStep('select');
       resetOutcome();
     }
   };
 
-  const onClearJson = () => {
-    setJsonText('');
-    setJsonFilename(undefined);
-    if (step === 'error' || step === 'received') {
-      setStep('select');
-      resetOutcome();
-    }
+  const onRemoveReproducer = (pendingId: string, filename: string) => {
+    setPendingFiles((current) =>
+      current.map((file) =>
+        file.id === pendingId
+          ? {
+              ...file,
+              reproducers: file.reproducers.filter((reproducer) => reproducer.name !== filename),
+            }
+          : file,
+      ),
+    );
   };
 
-  const onClearPoc = () => setPocFile(undefined);
+  const onReproducerSelected = useCallback(
+    async (pendingId: string, files: FileList | File[] | undefined) => {
+      if (!files || files.length === 0) {
+        return;
+      }
+
+      const incoming = Array.from(files);
+      const oversized = incoming.find((file) => file.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES);
+      if (oversized) {
+        setProcessError(
+          `${oversized.name} exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
+        );
+        setStep('error');
+        return;
+      }
+
+      setPendingFiles((current) =>
+        current.map((file) =>
+          file.id === pendingId
+            ? { ...file, reproducers: appendUniqueFiles(file.reproducers, incoming) }
+            : file,
+        ),
+      );
+      setProcessError(undefined);
+      if (step === 'error' || step === 'received') {
+        setStep('select');
+        setStructuralErrors([]);
+        setSubmissionIds(undefined);
+        setFindingCount(undefined);
+      }
+    },
+    [step],
+  );
 
   const onFilesAccepted = useCallback(async (files: File[]) => {
     if (!files.length) return;
 
-    const jsonFiles = files.filter((file) => isJsonFilename(file.name));
-    const pocFiles = files.filter((file) => isPocArchiveFilename(file.name));
-    const unknown = files.filter(
-      (file) => !isJsonFilename(file.name) && !isPocArchiveFilename(file.name),
-    );
-
-    if (unknown.length) {
+    const nonJson = files.filter((file) => !isJsonFilename(file.name));
+    if (nonJson.length) {
       setProcessError(
-        `Unsupported file type: ${unknown.map((file) => file.name).join(', ')}. Use a .json findings file and an optional .tar / .tar.gz / .tgz POC archive.`,
+        `Unsupported file type: ${nonJson.map((file) => file.name).join(', ')}. Drop findings .json files only. Attach reproducers with Upload reproducer file on each selected JSON.`,
       );
       setStep('error');
       return;
     }
 
-    if (jsonFiles.length > 1) {
-      setProcessError('Upload only one vulnerability findings JSON file.');
-      setStep('error');
-      return;
-    }
-
-    if (pocFiles.length > 1) {
-      setProcessError('Upload only one POC archive.');
-      setStep('error');
-      return;
-    }
-
-    const oversized = [...jsonFiles, ...pocFiles].find(
-      (file) => file.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES,
-    );
+    const oversized = files.find((file) => file.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES);
     if (oversized) {
       setProcessError(
         `${oversized.name} exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
@@ -141,21 +178,29 @@ export const useBeaconUpload = () => {
     }
 
     try {
-      if (jsonFiles[0]) {
-        const text = await readFileAsText(jsonFiles[0]);
-        setJsonText(text);
-        setJsonFilename(jsonFiles[0].name);
+      const additions: PendingFindingsFile[] = [];
+      for (const file of files) {
+        const text = await readFileAsText(file);
+        additions.push({
+          id: createPendingId(),
+          filename: file.name,
+          jsonText: text,
+          reproducers: [],
+        });
       }
-      if (pocFiles[0]) {
-        setPocFile(pocFiles[0]);
-      }
+
+      setPendingFiles((current) => {
+        const existingNames = new Set(current.map((item) => item.filename));
+        const uniqueAdditions = additions.filter((item) => !existingNames.has(item.filename));
+        return [...current, ...uniqueAdditions];
+      });
       setProcessError(undefined);
       setStructuralErrors([]);
-      setSubmissionId(undefined);
+      setSubmissionIds(undefined);
       setFindingCount(undefined);
       setStep('select');
     } catch {
-      setProcessError('Could not read the JSON file. Try pasting the contents instead.');
+      setProcessError('Could not read one or more JSON files. Choose valid findings .json files.');
       setStep('error');
     }
   }, []);
@@ -165,32 +210,57 @@ export const useBeaconUpload = () => {
     setStep('validating');
 
     window.setTimeout(() => {
-      const result = validateVulnerabilitySubmissionJson(jsonText);
-      if (!result.ok) {
-        setStructuralErrors(result.errors);
+      const allErrors: StructuralValidationError[] = [];
+      const validated: { pending: PendingFindingsFile; findingCount: number }[] = [];
+
+      pendingFiles.forEach((pending) => {
+        const result = validateVulnerabilitySubmissionJson(pending.jsonText);
+        if (!result.ok) {
+          result.errors.forEach((error) => {
+            allErrors.push({
+              path: `${pending.filename}:${error.path}`,
+              message: error.message,
+            });
+          });
+          return;
+        }
+        validated.push({ pending, findingCount: result.findingCount });
+      });
+
+      if (allErrors.length > 0) {
+        setStructuralErrors(allErrors);
         setStep('error');
         return;
       }
 
-      const submission = addBeaconSubmission({
-        findingCount: result.findingCount,
-        jsonFilename: jsonFilename ?? 'pasted-findings.json',
-        pocFilename: pocFile?.name,
-        sizeBytes: new Blob([jsonText]).size + (pocFile?.size ?? 0),
-        submitterName: 'Demo customer user',
-        submitterReference: `Org: ${BEACON_MOCK_ORG_NAME}`,
+      const createdIds: string[] = [];
+      let totalFindings = 0;
+      validated.forEach(({ pending, findingCount: count }) => {
+        const submission = addBeaconSubmission({
+          findingCount: count,
+          jsonFilename: pending.filename,
+          pocFilenames: pending.reproducers.map((file) => file.name),
+          sizeBytes:
+            new Blob([pending.jsonText]).size +
+            pending.reproducers.reduce((total, file) => total + file.size, 0),
+          submitterName: 'Demo customer user',
+          submitterReference: `Org: ${BEACON_MOCK_ORG_NAME}`,
+        });
+        createdIds.push(submission.id);
+        totalFindings += count;
       });
 
-      setFindingCount(result.findingCount);
-      setSubmissionId(submission.id);
+      setFindingCount(totalFindings);
+      setSubmissionIds(createdIds);
+      setPendingFiles([]);
       setStep('received');
     }, MOCK_VALIDATE_DELAY_MS);
-  }, [jsonFilename, jsonText, pocFile]);
+  }, [pendingFiles]);
 
   const onSubmit = () => {
-    if (!jsonText.trim()) {
+    if (pendingFiles.length === 0) {
       setStructuralErrors([
-        { path: '$', message: 'Upload or paste a vulnerability findings JSON payload first.' },
+        { path: '$', message: 'Upload at least one vulnerability findings JSON file first.' },
       ]);
       setStep('error');
       return;
@@ -206,17 +276,15 @@ export const useBeaconUpload = () => {
 
   const uploadProps: BeaconUploadCardProps = {
     step,
-    jsonText,
-    jsonFilename,
-    pocFile,
+    pendingFiles,
     structuralErrors,
     processError,
-    submissionId,
+    submissionIds,
     findingCount,
-    onJsonTextChange,
     onFilesAccepted,
-    onClearJson,
-    onClearPoc,
+    onReproducerSelected,
+    onRemovePendingFile,
+    onRemoveReproducer,
     onSubmit,
     onRetry,
     onStartOver: startOver,
@@ -227,7 +295,9 @@ export const useBeaconUpload = () => {
     uploadProps,
     startOver,
     isReceived: step === 'received',
-    submissionId,
+    submissionIds,
+    submissionId: submissionIds?.[0],
     findingCount,
+    submissionCount: submissionIds?.length,
   };
 };

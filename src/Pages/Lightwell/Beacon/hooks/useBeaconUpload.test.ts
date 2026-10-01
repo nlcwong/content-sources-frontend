@@ -25,83 +25,114 @@ describe('useBeaconUpload', () => {
     jest.useRealTimers();
   });
 
-  it('surfaces structural errors for invalid JSON', () => {
+  it('surfaces structural errors for invalid JSON', async () => {
+    jest.useRealTimers();
     const { result } = renderHook(() => useBeaconUpload());
+    const invalid = new File(['{'], 'bad.json', { type: 'application/json' });
 
-    act(() => {
-      result.current.uploadProps.onJsonTextChange('{');
+    await act(async () => {
+      await result.current.uploadProps.onFilesAccepted([invalid]);
     });
     act(() => {
       result.current.uploadProps.onSubmit();
     });
-    act(() => {
-      jest.advanceTimersByTime(1000);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     });
 
     expect(result.current.step).toBe('error');
     expect(result.current.uploadProps.structuralErrors[0].message).toMatch(/Invalid JSON/i);
   });
 
-  it('records Received with a durable submission id after structural pass', () => {
-    const { result } = renderHook(() => useBeaconUpload());
-
-    act(() => {
-      result.current.uploadProps.onJsonTextChange(validPayload);
-    });
-    act(() => {
-      result.current.uploadProps.onSubmit();
-    });
-
-    expect(result.current.step).toBe('validating');
-
-    act(() => {
-      jest.advanceTimersByTime(1000);
-    });
-
-    expect(result.current.step).toBe('received');
-    expect(result.current.isReceived).toBe(true);
-    expect(result.current.submissionId).toMatch(/^SUB-/);
-
-    const stored = JSON.parse(localStorage.getItem('lightwell-beacon-submissions') ?? '[]');
-    expect(stored).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          status: 'Received',
-          findingCount: 1,
-          id: result.current.submissionId,
-        }),
-      ]),
-    );
-  });
-
-  it('accepts JSON and optional POC from one file drop', async () => {
+  it('records one Submitted row per findings JSON after structural pass', async () => {
     jest.useRealTimers();
-    const { result } = renderHook(() => useBeaconUpload());
-    const jsonFile = new File([validPayload], 'findings.json', { type: 'application/json' });
-    const pocFile = new File(['poc'], 'POC-Reports_2026-09-29.tar.gz', {
-      type: 'application/gzip',
-    });
-
-    await act(async () => {
-      await result.current.uploadProps.onFilesAccepted([jsonFile, pocFile]);
-    });
-
-    expect(result.current.uploadProps.jsonFilename).toBe('findings.json');
-    expect(result.current.uploadProps.jsonText).toBe(validPayload);
-    expect(result.current.uploadProps.pocFile?.name).toBe('POC-Reports_2026-09-29.tar.gz');
-    expect(result.current.step).toBe('select');
-  });
-
-  it('rejects two JSON files in one drop', async () => {
     const { result } = renderHook(() => useBeaconUpload());
     const first = new File([validPayload], 'a.json', { type: 'application/json' });
     const second = new File([validPayload], 'b.json', { type: 'application/json' });
 
     await act(async () => {
-      result.current.uploadProps.onFilesAccepted([first, second]);
+      await result.current.uploadProps.onFilesAccepted([first, second]);
+    });
+    act(() => {
+      result.current.uploadProps.onSubmit();
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+    });
+
+    expect(result.current.step).toBe('received');
+    expect(result.current.isReceived).toBe(true);
+    expect(result.current.submissionIds).toHaveLength(2);
+    expect(result.current.submissionId).toMatch(/^SUB-/);
+
+    const stored = JSON.parse(localStorage.getItem('lightwell-beacon-submissions') ?? '[]');
+    expect(stored).toHaveLength(2);
+    expect(stored).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          status: 'Submitted, waiting for validation',
+          jsonFilename: 'a.json',
+          findingCount: 1,
+        }),
+        expect.objectContaining({
+          status: 'Submitted, waiting for validation',
+          jsonFilename: 'b.json',
+          findingCount: 1,
+        }),
+      ]),
+    );
+  });
+
+  it('accepts multiple findings JSON files from one drop', async () => {
+    jest.useRealTimers();
+    const { result } = renderHook(() => useBeaconUpload());
+    const first = new File([validPayload], 'a.json', { type: 'application/json' });
+    const second = new File([validPayload], 'b.json', { type: 'application/json' });
+
+    await act(async () => {
+      await result.current.uploadProps.onFilesAccepted([first, second]);
+    });
+
+    expect(result.current.uploadProps.pendingFiles.map((file) => file.filename)).toEqual([
+      'a.json',
+      'b.json',
+    ]);
+    expect(result.current.step).toBe('select');
+  });
+
+  it('attaches reproducers to a specific pending findings file', async () => {
+    jest.useRealTimers();
+    const { result } = renderHook(() => useBeaconUpload());
+    const jsonFile = new File([validPayload], 'findings.json', { type: 'application/json' });
+
+    await act(async () => {
+      await result.current.uploadProps.onFilesAccepted([jsonFile]);
+    });
+
+    const pendingId = result.current.uploadProps.pendingFiles[0].id;
+    const first = new File(['a'], 'repro-a.bin');
+    const second = new File(['b'], 'repro-b.txt');
+
+    await act(async () => {
+      await result.current.uploadProps.onReproducerSelected(pendingId, [first, second]);
+    });
+
+    expect(
+      result.current.uploadProps.pendingFiles[0].reproducers.map((file) => file.name),
+    ).toEqual(['repro-a.bin', 'repro-b.txt']);
+  });
+
+  it('rejects non-JSON files in the dropzone', async () => {
+    jest.useRealTimers();
+    const { result } = renderHook(() => useBeaconUpload());
+    const jsonFile = new File([validPayload], 'a.json', { type: 'application/json' });
+    const other = new File(['poc'], 'notes.txt', { type: 'text/plain' });
+
+    await act(async () => {
+      await result.current.uploadProps.onFilesAccepted([jsonFile, other]);
     });
 
     expect(result.current.step).toBe('error');
-    expect(result.current.uploadProps.processError).toMatch(/only one vulnerability findings JSON/i);
+    expect(result.current.uploadProps.processError).toMatch(/Unsupported file type/i);
   });
 });

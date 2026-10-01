@@ -26,9 +26,8 @@ const AccessBoundaryNote = ({ audience }: AccessBoundaryNoteProps) => (
     ) : (
       <Content component='p'>
         This view is for assigned LW-STAMs, backups, and trusted administrators. Customers see
-        status updates (Received, Processing, pipeline queue, more information requested) on their
-        own history. Original file retrieval uses an approved process with audit (out of this
-        wireframe)—not a one-click download here.
+        status updates (Submitted, waiting for validation; Validating…; Accepted or Rejected) on
+        their own history. Download starts validation review in this wireframe.
       </Content>
     )}
   </Alert>
