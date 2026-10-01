@@ -1,7 +1,11 @@
 export type BeaconUploadStep = 'select' | 'validating' | 'error' | 'received';
 
-/** Customer-visible statuses with a reliable mock event. */
-export type BeaconSubmissionStatus = 'Received' | 'Accepted for processing';
+/** Customer- and STAM-visible statuses with a reliable mock event. */
+export type BeaconSubmissionStatus =
+  | 'Received'
+  | 'Processing'
+  | 'Added to pipeline queue'
+  | 'More information requested';
 
 export type BeaconSubmission = {
   /** Durable receipt / submission reference shown to the customer. */
@@ -15,6 +19,8 @@ export type BeaconSubmission = {
   /** Stub fields so STAMs can request clarification. */
   submitterName: string;
   submitterReference: string;
+  /** Set when STAM Approves and status becomes Added to pipeline queue. */
+  pipelineAddedAt?: string;
 };
 
 /** Soft size limit for JSON or POC archive (prototype). */

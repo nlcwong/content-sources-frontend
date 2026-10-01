@@ -20,7 +20,7 @@ const BeaconIncomingUploads = () => (
     <LightwellPageHeader
       title='Incoming uploads'
       ouiaId='lightwell-beacon-incoming-header'
-      description='Review Received customer vulnerability submissions. Accept for processing after semantic review—before JSM automation.'
+      description='Review customer vulnerability submissions. Begin processing, then Approve into the pipeline queue or request more information—before JSM automation.'
     />
     <PageSection
       aria-label='Incoming Beacon uploads'

@@ -26,8 +26,9 @@ const AccessBoundaryNote = ({ audience }: AccessBoundaryNoteProps) => (
     ) : (
       <Content component='p'>
         This view is for assigned LW-STAMs, backups, and trusted administrators. Customers see
-        Received / Accepted for processing on their own history. Original file retrieval uses an
-        approved process with audit (out of this wireframe)—not a one-click download here.
+        status updates (Received, Processing, pipeline queue, more information requested) on their
+        own history. Original file retrieval uses an approved process with audit (out of this
+        wireframe)—not a one-click download here.
       </Content>
     )}
   </Alert>

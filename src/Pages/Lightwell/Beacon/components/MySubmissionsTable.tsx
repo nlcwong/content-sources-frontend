@@ -3,6 +3,7 @@ import { Table, TableVariant, Tbody, Td, Th, Thead, Tr } from '@patternfly/react
 import { Content, Title } from '@patternfly/react-core';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 
+import type { BeaconSubmission } from '../uploadTypes';
 import {
   readBeaconSubmissions,
   subscribeBeaconSubmissions,
@@ -16,6 +17,13 @@ const formatUploadedAt = (iso: string) => {
   }
 };
 
+const statusDisplay = (submission: BeaconSubmission) => {
+  if (submission.status === 'Added to pipeline queue' && submission.pipelineAddedAt) {
+    return `${submission.status} (${formatUploadedAt(submission.pipelineAddedAt)})`;
+  }
+  return submission.status;
+};
+
 const MySubmissionsTable = () => {
   const submissions = useSyncExternalStore(subscribeBeaconSubmissions, readBeaconSubmissions);
 
@@ -25,8 +33,8 @@ const MySubmissionsTable = () => {
         My submissions
       </Title>
       <Content component='small' className={spacing.mbMd}>
-        History shows receipt status only. It does not include download of original JSON or POC
-        archives.
+        History shows receipt and processing status. It does not include download of original JSON
+        or POC archives. More-information requests are handled out of band with your STAM.
       </Content>
       {submissions.length === 0 ? (
         <Content component='p'>
@@ -52,7 +60,7 @@ const MySubmissionsTable = () => {
                 <Td dataLabel='Submitted'>{formatUploadedAt(submission.uploadedAt)}</Td>
                 <Td dataLabel='Findings'>{submission.findingCount}</Td>
                 <Td dataLabel='POC archive'>{submission.pocFilename ?? '—'}</Td>
-                <Td dataLabel='Status'>{submission.status}</Td>
+                <Td dataLabel='Status'>{statusDisplay(submission)}</Td>
               </Tr>
             ))}
           </Tbody>

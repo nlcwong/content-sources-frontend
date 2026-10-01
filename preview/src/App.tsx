@@ -245,7 +245,7 @@ const IncomingUploadsPage = () => (
   <>
     <LightwellPageHeader
       title='Incoming uploads'
-      description='Review Received customer vulnerability submissions. Accept for processing after semantic review—before JSM automation.'
+      description='Review customer vulnerability submissions. Begin processing, then Approve into the pipeline queue or request more information—before JSM automation.'
     />
     <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
       <Stack hasGutter>

@@ -13,9 +13,22 @@ const notifySubmissionsChanged = () => {
   window.dispatchEvent(new Event(SUBMISSIONS_CHANGED_EVENT));
 };
 
+const ACTIVE_QUEUE_STATUSES: BeaconSubmissionStatus[] = ['Received', 'Processing'];
+
 const normalizeStatus = (status: string): BeaconSubmissionStatus => {
-  if (status === 'Accepted' || status === 'Accepted for processing') {
-    return 'Accepted for processing';
+  if (status === 'Processing') {
+    return 'Processing';
+  }
+  if (
+    status === 'Accepted' ||
+    status === 'Accepted for processing' ||
+    status === 'Added to pipeline' ||
+    status === 'Added to pipeline queue'
+  ) {
+    return 'Added to pipeline queue';
+  }
+  if (status === 'More information requested') {
+    return 'More information requested';
   }
   return 'Received';
 };
@@ -36,6 +49,8 @@ const normalizeSubmission = (raw: Record<string, unknown>): BeaconSubmission | n
       typeof raw.submitterReference === 'string'
         ? raw.submitterReference
         : 'Ref: intake-demo',
+    pipelineAddedAt:
+      typeof raw.pipelineAddedAt === 'string' ? raw.pipelineAddedAt : undefined,
   };
 };
 
@@ -95,9 +110,18 @@ export const addBeaconSubmission = (
 };
 
 export const updateBeaconSubmissionStatus = (id: string, status: BeaconSubmissionStatus) => {
-  const next = readBeaconSubmissions().map((submission) =>
-    submission.id === id ? { ...submission, status } : submission,
-  );
+  const next = readBeaconSubmissions().map((submission) => {
+    if (submission.id !== id) {
+      return submission;
+    }
+    return {
+      ...submission,
+      status,
+      ...(status === 'Added to pipeline queue'
+        ? { pipelineAddedAt: new Date().toISOString() }
+        : {}),
+    };
+  });
   writeBeaconSubmissions(next);
 };
 
@@ -110,6 +134,12 @@ export const subscribeBeaconSubmissions = (listener: () => void) => {
   };
 };
 
+/** Actionable STAM active queue (Received + Processing). */
 export const getIncomingBeaconSubmissions = (
   submissions: BeaconSubmission[] = readBeaconSubmissions(),
-) => submissions.filter((submission) => submission.status === 'Received');
+) => submissions.filter((submission) => ACTIVE_QUEUE_STATUSES.includes(submission.status));
+
+/** All submissions for the STAM Incoming uploads table (including terminal states). */
+export const getStamVisibleBeaconSubmissions = (
+  submissions: BeaconSubmission[] = readBeaconSubmissions(),
+) => submissions;
