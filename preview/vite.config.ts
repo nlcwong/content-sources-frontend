@@ -52,12 +52,28 @@ export default defineConfig({
         replacement: path.resolve(stubsDir, 'rhcsTypes.ts'),
       },
       {
+        find: '@scalprum/react-core',
+        replacement: path.resolve(stubsDir, 'scalprumReactCore.ts'),
+      },
+      {
+        find: '@unleash/proxy-client-react',
+        replacement: path.resolve(stubsDir, 'unleashProxyClientReact.ts'),
+      },
+      {
         find: 'Hooks/useNotification',
         replacement: path.resolve(stubsDir, 'useNotification.ts'),
       },
       {
         find: 'Hooks/useErrorNotification',
         replacement: path.resolve(stubsDir, 'useErrorNotification.ts'),
+      },
+      {
+        find: 'Hooks/Lightwell/navigation/useLightwellRootPath',
+        replacement: path.resolve(stubsDir, 'useLightwellRootPath.ts'),
+      },
+      {
+        find: path.resolve(srcRoot, 'Hooks/Lightwell/navigation/useLightwellRootPath.ts'),
+        replacement: path.resolve(stubsDir, 'useLightwellRootPath.ts'),
       },
       {
         find: 'Hooks',
