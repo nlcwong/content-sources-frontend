@@ -134,6 +134,7 @@ export const useBeaconUpload = () => {
         setProcessError(
           `${oversized.name} exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
         );
+        setPendingFiles([]);
         setStep('error');
         return;
       }
@@ -162,45 +163,42 @@ export const useBeaconUpload = () => {
     const nonJson = files.filter((file) => !isJsonFilename(file.name));
     if (nonJson.length) {
       setProcessError(
-        `Unsupported file type: ${nonJson.map((file) => file.name).join(', ')}. Drop findings .json files only. Attach reproducers with Upload reproducer file on each selected JSON.`,
+        `Unsupported file type: ${nonJson.map((file) => file.name).join(', ')}. Drop a findings .json file only. Attach reproducers with Upload reproducer file after selection.`,
       );
+      setPendingFiles([]);
       setStep('error');
       return;
     }
 
-    const oversized = files.find((file) => file.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES);
-    if (oversized) {
+    // Single findings JSON only — take the first if multiple arrive.
+    const file = files[0];
+    if (file.size > BEACON_UPLOAD_MAX_FILE_SIZE_BYTES) {
       setProcessError(
-        `${oversized.name} exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
+        `${file.name} exceeds the ${BEACON_UPLOAD_MAX_FILE_SIZE_MB} MB size limit. Please try a smaller file.`,
       );
+      setPendingFiles([]);
       setStep('error');
       return;
     }
 
     try {
-      const additions: PendingFindingsFile[] = [];
-      for (const file of files) {
-        const text = await readFileAsText(file);
-        additions.push({
+      const text = await readFileAsText(file);
+      setPendingFiles([
+        {
           id: createPendingId(),
           filename: file.name,
           jsonText: text,
           reproducers: [],
-        });
-      }
-
-      setPendingFiles((current) => {
-        const existingNames = new Set(current.map((item) => item.filename));
-        const uniqueAdditions = additions.filter((item) => !existingNames.has(item.filename));
-        return [...current, ...uniqueAdditions];
-      });
+        },
+      ]);
       setProcessError(undefined);
       setStructuralErrors([]);
       setSubmissionIds(undefined);
       setFindingCount(undefined);
       setStep('select');
     } catch {
-      setProcessError('Could not read one or more JSON files. Choose valid findings .json files.');
+      setProcessError('Could not read the JSON file. Choose a valid findings .json file.');
+      setPendingFiles([]);
       setStep('error');
     }
   }, []);
@@ -229,6 +227,7 @@ export const useBeaconUpload = () => {
 
       if (allErrors.length > 0) {
         setStructuralErrors(allErrors);
+        setPendingFiles([]);
         setStep('error');
         return;
       }

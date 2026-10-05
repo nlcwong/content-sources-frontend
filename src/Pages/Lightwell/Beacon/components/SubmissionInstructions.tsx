@@ -20,10 +20,9 @@ const SubmissionInstructions = () => (
         </Content>
         <List>
           <ListItem>
-            Upload one or more findings <Content component='code'>.json</Content> files via
-            drag-and-drop or Choose files. Each JSON becomes its own submission. Payload shape: an
-            array of findings or an object with a <Content component='code'>findings</Content>{' '}
-            array.
+            Upload one findings <Content component='code'>.json</Content> file via drag-and-drop
+            or Choose file. Payload shape: an array of findings or an object with a{' '}
+            <Content component='code'>findings</Content> array.
           </ListItem>
           <ListItem>
             Required fields per finding (stub):{' '}
@@ -35,7 +34,7 @@ const SubmissionInstructions = () => (
             . Other spreadsheet columns may be optional or derived during LW-STAM review (TBD).
           </ListItem>
           <ListItem>
-            For each selected JSON, optionally attach one or more reproducer files of any type with{' '}
+            Optionally attach one or more reproducer files of any type with{' '}
             <strong>Upload reproducer file</strong>. Name each reproducer for its{' '}
             <Content component='code'>vulnerability_id</Content> when applicable.
           </ListItem>
