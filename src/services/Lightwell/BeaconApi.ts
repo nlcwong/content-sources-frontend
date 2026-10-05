@@ -103,11 +103,22 @@ function mapSeverityToApi(severity: Severity): string {
   return severity === 'Minor' ? 'Low' : severity;
 }
 
+const BARE_CLOSED_STATUS_MAP: Record<string, Status> = {
+  "Won't Do": "Closed - Won't Do",
+  'Not a Bug': 'Closed - Not a Bug',
+  'Cannot Reproduce': 'Closed - Cannot Reproduce',
+  Obsolete: 'Closed - Obsolete',
+};
+
+export function mapStatus(status: string): Status {
+  return BARE_CLOSED_STATUS_MAP[status] ?? (status as Status);
+}
+
 export function mapLightwellVulnerability(
   vulnerability: LightwellVulnerabilityResponse,
 ): Vulnerability {
   const ticketIds = vulnerability.ltwlsupt_ticket_ids ?? [];
-  const status = vulnerability.status as Status;
+  const status = mapStatus(vulnerability.status);
 
   return {
     uuid: vulnerability.uuid,
@@ -141,10 +152,16 @@ export function mapLightwellVulnerability(
 export function mapCollectionMeta(
   meta: LightwellVulnerabilityCollectionResponse['meta'],
 ): BeaconVulnerabilityMeta {
+  const statusCounts: Record<string, number> = {};
+  for (const [status, count] of Object.entries(meta.status_counts ?? {})) {
+    const normalized = mapStatus(status);
+    statusCounts[normalized] = (statusCounts[normalized] ?? 0) + count;
+  }
+
   return {
     count: meta.count,
     criticalCount: meta.critical_count,
-    statusCounts: meta.status_counts ?? {},
+    statusCounts,
   };
 }
 

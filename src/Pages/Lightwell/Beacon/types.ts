@@ -8,10 +8,10 @@ export type Status =
   | 'Lightwell Network'
   | 'Upstreaming'
   | 'Published'
-  | "Won't Do"
-  | 'Not a Bug'
-  | 'Cannot Reproduce'
-  | 'Obsolete';
+  | "Closed - Won't Do"
+  | 'Closed - Not a Bug'
+  | 'Closed - Cannot Reproduce'
+  | 'Closed - Obsolete';
 
 export type CustomerPriority = 'Priority 1' | 'Priority 2' | 'Priority 3' | 'Priority 4';
 

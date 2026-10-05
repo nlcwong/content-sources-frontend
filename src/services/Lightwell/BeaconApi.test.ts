@@ -4,6 +4,7 @@ import {
   getBeaconStatus,
   getLtwlsuptTicketIds,
   getVulnerabilities,
+  mapCollectionMeta,
   mapLightwellVulnerability,
   type LightwellVulnerabilityCollectionResponse,
   type LightwellVulnerabilityResponse,
@@ -65,12 +66,39 @@ describe('mapLightwellVulnerability', () => {
   it('maps optional resolution_reason to resolutionReason', () => {
     const mapped = mapLightwellVulnerability({
       ...baseVulnerability,
-      status: "Won't Do",
+      status: "Closed - Won't Do",
       resolution_reason: 'Upstream rejected a similar patch.',
     });
 
-    expect(mapped.status).toBe("Won't Do");
+    expect(mapped.status).toBe("Closed - Won't Do");
     expect(mapped.resolutionReason).toBe('Upstream rejected a similar patch.');
+  });
+
+  it('normalizes bare closed resolutions to Closed - prefixed statuses', () => {
+    expect(
+      mapLightwellVulnerability({
+        ...baseVulnerability,
+        status: "Won't Do",
+      }).status,
+    ).toBe("Closed - Won't Do");
+    expect(
+      mapLightwellVulnerability({
+        ...baseVulnerability,
+        status: 'Not a Bug',
+      }).status,
+    ).toBe('Closed - Not a Bug');
+    expect(
+      mapLightwellVulnerability({
+        ...baseVulnerability,
+        status: 'Cannot Reproduce',
+      }).status,
+    ).toBe('Closed - Cannot Reproduce');
+    expect(
+      mapLightwellVulnerability({
+        ...baseVulnerability,
+        status: 'Obsolete',
+      }).status,
+    ).toBe('Closed - Obsolete');
   });
 
   it('leaves resolutionReason undefined when resolution_reason is absent', () => {
@@ -93,6 +121,28 @@ describe('mapLightwellVulnerability', () => {
         published_versions: undefined as unknown as string[],
       }).publishedVersions,
     ).toEqual([]);
+  });
+});
+
+describe('mapCollectionMeta', () => {
+  it('normalizes bare closed resolution keys in status_counts', () => {
+    expect(
+      mapCollectionMeta({
+        count: 3,
+        limit: 200,
+        offset: 0,
+        critical_count: 1,
+        status_counts: {
+          "Won't Do": 1,
+          'Closed - Not a Bug': 1,
+          Submitted: 1,
+        },
+      }).statusCounts,
+    ).toEqual({
+      "Closed - Won't Do": 1,
+      'Closed - Not a Bug': 1,
+      Submitted: 1,
+    });
   });
 });
 

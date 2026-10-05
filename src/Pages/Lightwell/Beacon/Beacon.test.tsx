@@ -147,12 +147,18 @@ it('renders the beacon page with status summary and vulnerability table', async 
 
   expect(screen.getByText('Status Summary')).toBeInTheDocument();
   expect(screen.getByText('Closed without remediation')).toBeInTheDocument();
-  expect(document.querySelector('.lightwell-closed-statuses')).toHaveTextContent("Won't Do");
-  expect(document.querySelector('.lightwell-closed-statuses')).toHaveTextContent('Not a Bug');
   expect(document.querySelector('.lightwell-closed-statuses')).toHaveTextContent(
-    'Cannot Reproduce',
+    "Closed - Won't Do",
   );
-  expect(document.querySelector('.lightwell-closed-statuses')).toHaveTextContent('Obsolete');
+  expect(document.querySelector('.lightwell-closed-statuses')).toHaveTextContent(
+    'Closed - Not a Bug',
+  );
+  expect(document.querySelector('.lightwell-closed-statuses')).toHaveTextContent(
+    'Closed - Cannot Reproduce',
+  );
+  expect(document.querySelector('.lightwell-closed-statuses')).toHaveTextContent(
+    'Closed - Obsolete',
+  );
   expect(screen.getByText('LWL-2026-4401')).toBeInTheDocument();
   expect(document.querySelector('.lightwell-filter-panel')).toBeInTheDocument();
   expect(screen.getByText('Customer ID')).toBeInTheDocument();
