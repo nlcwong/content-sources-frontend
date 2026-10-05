@@ -7,6 +7,7 @@ import {
   type StructuralValidationError,
 } from '../utils/validateVulnerabilitySubmission';
 import {
+  BEACON_MOCK_CUSTOMER_ID,
   BEACON_MOCK_ORG_NAME,
   BEACON_UPLOAD_MAX_FILE_SIZE_BYTES,
   BEACON_UPLOAD_MAX_FILE_SIZE_MB,
@@ -242,7 +243,7 @@ export const useBeaconUpload = () => {
           sizeBytes:
             new Blob([pending.jsonText]).size +
             pending.reproducers.reduce((total, file) => total + file.size, 0),
-          submitterName: 'Demo customer user',
+          submitterName: BEACON_MOCK_CUSTOMER_ID,
           submitterReference: `Org: ${BEACON_MOCK_ORG_NAME}`,
         });
         createdIds.push(submission.id);

@@ -1,46 +1,13 @@
-import { Content, PageSection, Stack, StackItem } from '@patternfly/react-core';
-import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
+import { Navigate } from 'react-router-dom';
 
-import LightwellPageHeader from '../components/LightwellPageHeader';
-import AccessBoundaryNote from './components/AccessBoundaryNote';
-import IncomingUploadsPanel from './components/IncomingUploadsPanel';
+import { useLightwellRootPath } from 'Hooks/Lightwell/navigation/useLightwellRootPath';
 
 /**
- * STAM-facing page for reviewing customer Beacon uploads (LWLP-1269 prototype).
+ * Incoming uploads now live as a panel on Beacon. Keep this route as a redirect.
  */
-const BeaconIncomingUploads = () => (
-  <>
-    <PageSection
-      aria-label='Incoming uploads access boundary'
-      hasBodyWrapper={false}
-      className={`${spacing.pb_0} ${spacing.pxLg} ${spacing.plXs}`}
-    >
-      <AccessBoundaryNote audience='stam' />
-    </PageSection>
-    <LightwellPageHeader
-      title='Incoming uploads'
-      ouiaId='lightwell-beacon-incoming-header'
-      description='Review customer vulnerability submissions. Download findings to begin structural validation review—before JSM automation.'
-    />
-    <PageSection
-      aria-label='Incoming Beacon uploads'
-      hasBodyWrapper={false}
-      className={`${spacing.pt_0} ${spacing.pbLg} ${spacing.pxLg} ${spacing.plXs}`}
-      data-ouia-component-id='lightwell-beacon-incoming-page'
-    >
-      <Stack hasGutter>
-        <StackItem>
-          <Content component='small'>
-            Download sets the customer-visible status to Validating…. Accepted and Rejected outcomes
-            are reserved for a later STAM step in this wireframe.
-          </Content>
-        </StackItem>
-        <StackItem>
-          <IncomingUploadsPanel />
-        </StackItem>
-      </Stack>
-    </PageSection>
-  </>
-);
+const BeaconIncomingUploads = () => {
+  const rootPath = useLightwellRootPath();
+  return <Navigate to={`${rootPath}/beacon`} replace />;
+};
 
 export default BeaconIncomingUploads;

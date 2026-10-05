@@ -52,10 +52,7 @@ const LightwellTopNav = () => {
       key: 'beacon',
       label: 'Beacon',
       visible: beaconEnabled,
-      isActive: (path) =>
-        path.includes('/beacon') &&
-        !path.includes('/beacon/upload') &&
-        !path.includes('/beacon/incoming'),
+      isActive: (path) => path.includes('/beacon') && !path.includes('/beacon/upload'),
       onClick: () => navigateTo('beacon'),
     },
     {
@@ -64,13 +61,6 @@ const LightwellTopNav = () => {
       visible: beaconEnabled,
       isActive: (path) => path.includes('/beacon/upload'),
       onClick: () => navigateTo('beaconUpload'),
-    },
-    {
-      key: 'beaconIncoming',
-      label: 'Incoming uploads',
-      visible: beaconEnabled,
-      isActive: (path) => path.includes('/beacon/incoming'),
-      onClick: () => navigateTo('beaconIncoming'),
     },
   ];
 

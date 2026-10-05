@@ -37,6 +37,9 @@ export const BEACON_SUBMISSIONS_STORAGE_KEY = 'lightwell-beacon-submissions';
 
 export const BEACON_MOCK_ORG_NAME = 'Acme Clearinghouse (demo org)';
 
+/** Demo customer ID used as submitterName so STAM Beacon can filter intake by Customer ID. */
+export const BEACON_MOCK_CUSTOMER_ID = 'CID-01';
+
 export const BEACON_REQUIRED_FINDING_FIELDS = [
   'vulnerability_id',
   'packageurl',

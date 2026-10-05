@@ -32,6 +32,7 @@ import { SEVERITIES, STATUSES } from './constants';
 import type { Severity, Status } from './types';
 import { CustomerIdSelect } from './components/CustomerIdSelect';
 import { ExportMenu } from './components/ExportMenu';
+import IncomingUploadsPanel from './components/IncomingUploadsPanel';
 import { PipelineView } from './components/PipelineView';
 import { VulnerabilityTable } from './components/VulnerabilityTable';
 import { useBeaconData } from './hooks/useBeaconData';
@@ -309,6 +310,9 @@ const Beacon = () => {
               <FlexItem flex={{ default: 'flex_1' }} className='lightwell-beacon-table-area'>
                 {selectedCustomerId && !isLoading ? (
                   <Stack hasGutter>
+                    <StackItem>
+                      <IncomingUploadsPanel customerId={selectedCustomerId} />
+                    </StackItem>
                     <StackItem>
                       <Card isGlass>
                         <CardHeader>

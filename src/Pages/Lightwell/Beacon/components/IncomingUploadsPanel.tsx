@@ -74,13 +74,19 @@ const onDownload = (submission: BeaconSubmission) => {
   }
 };
 
+type IncomingUploadsPanelProps = {
+  customerId: string;
+};
+
 /**
  * STAM-facing prototype panel: customer submissions for intake review.
  * Shares localStorage store with the customer upload page.
  */
-const IncomingUploadsPanel = () => {
+const IncomingUploadsPanel = ({ customerId }: IncomingUploadsPanelProps) => {
   const submissions = useSyncExternalStore(subscribeBeaconSubmissions, readBeaconSubmissions);
-  const visible = getStamVisibleBeaconSubmissions(submissions);
+  const visible = getStamVisibleBeaconSubmissions(submissions).filter(
+    (submission) => submission.submitterName === customerId,
+  );
 
   return (
     <Card isGlass data-ouia-component-id='lightwell-beacon-incoming-uploads'>
@@ -95,7 +101,7 @@ const IncomingUploadsPanel = () => {
         </Content>
         {visible.length === 0 ? (
           <Content component='p' className={spacing.mtMd}>
-            No customer submissions yet.
+            No submissions for customer <Content component='code'>{customerId}</Content> yet.
           </Content>
         ) : (
           <Table variant={TableVariant.compact} aria-label='Incoming customer uploads'>
@@ -104,9 +110,7 @@ const IncomingUploadsPanel = () => {
                 <Th>Submission ID</Th>
                 <Th>Submitted</Th>
                 <Th>Findings</Th>
-                <Th>Submitter</Th>
-                <Th>Reference</Th>
-                <Th>Status</Th>
+                <Th>Reproducers</Th>
                 <Th>Actions</Th>
               </Tr>
             </Thead>
@@ -118,9 +122,7 @@ const IncomingUploadsPanel = () => {
                   </Td>
                   <Td dataLabel='Submitted'>{formatUploadedAt(submission.uploadedAt)}</Td>
                   <Td dataLabel='Findings'>{submission.findingCount}</Td>
-                  <Td dataLabel='Submitter'>{submission.submitterName}</Td>
-                  <Td dataLabel='Reference'>{submission.submitterReference}</Td>
-                  <Td dataLabel='Status'>{submission.status}</Td>
+                  <Td dataLabel='Reproducers'>{submission.pocFilenames.length}</Td>
                   <Td dataLabel='Actions'>
                     <Button
                       variant='plain'

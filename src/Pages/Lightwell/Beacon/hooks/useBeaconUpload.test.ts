@@ -73,6 +73,7 @@ describe('useBeaconUpload', () => {
         status: 'Submitted, waiting for validation',
         jsonFilename: 'a.json',
         findingCount: 1,
+        submitterName: 'CID-01',
       }),
     );
   });

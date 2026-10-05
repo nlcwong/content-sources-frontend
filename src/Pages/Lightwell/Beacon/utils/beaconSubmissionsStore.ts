@@ -1,4 +1,5 @@
 import {
+  BEACON_MOCK_CUSTOMER_ID,
   BEACON_STATUS_ACCEPTED,
   BEACON_STATUS_REJECTED,
   BEACON_STATUS_SUBMITTED,
@@ -114,8 +115,12 @@ const normalizeSubmission = (raw: Record<string, unknown>): BeaconSubmission | n
     jsonFilename: typeof raw.jsonFilename === 'string' ? raw.jsonFilename : undefined,
     pocFilenames: normalizePocFilenames(raw),
     sizeBytes: typeof raw.sizeBytes === 'number' ? raw.sizeBytes : 0,
-    submitterName:
-      typeof raw.submitterName === 'string' ? raw.submitterName : 'Demo customer user',
+    submitterName: (() => {
+      if (typeof raw.submitterName !== 'string' || raw.submitterName === 'Demo customer user') {
+        return BEACON_MOCK_CUSTOMER_ID;
+      }
+      return raw.submitterName;
+    })(),
     submitterReference:
       typeof raw.submitterReference === 'string'
         ? raw.submitterReference
