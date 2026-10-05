@@ -79,6 +79,33 @@
   padding: 0 var(--pf-t--global--spacer--xs);
 }
 
+.lightwell-closed-statuses {
+  margin-top: var(--pf-t--global--spacer--md);
+  padding: var(--pf-t--global--spacer--sm) 0 0;
+}
+
+.lightwell-closed-statuses-label {
+  display: block;
+  margin-bottom: var(--pf-t--global--spacer--sm);
+  color: var(--pf-t--global--text--color--subtle);
+}
+
+.lightwell-status-cell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--xs);
+  min-width: 0;
+}
+
+.lightwell-status-cell-reason {
+  display: block;
+  max-width: 16rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pf-t--global--text--color--subtle);
+}
+
 /* Status cards (read-only pipeline visuals) */
 .lightwell-status-card {
   text-align: center;

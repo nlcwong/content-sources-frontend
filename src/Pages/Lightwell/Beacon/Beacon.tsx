@@ -35,6 +35,7 @@ import { SEVERITIES, STATUSES } from './constants';
 import type { Severity, Status } from './types';
 import { CustomerIdSelect } from './components/CustomerIdSelect';
 import { ExportMenu } from './components/ExportMenu';
+import { ClosedStatusesView } from './components/ClosedStatusesView';
 import { PipelineView } from './components/PipelineView';
 import { VulnerabilityTable } from './components/VulnerabilityTable';
 import { useBeaconData } from './hooks/useBeaconData';
@@ -417,6 +418,7 @@ const Beacon = () => {
                             </FlexItem>
                           </Flex>
                           <PipelineView statusCounts={displayMeta?.statusCounts} />
+                          <ClosedStatusesView statusCounts={displayMeta?.statusCounts} />
                         </CardBody>
                       </Card>
                     </StackItem>

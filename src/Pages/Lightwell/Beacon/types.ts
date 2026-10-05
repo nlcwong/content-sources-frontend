@@ -7,7 +7,11 @@ export type Status =
   | 'Validation'
   | 'Lightwell Network'
   | 'Upstreaming'
-  | 'Published';
+  | 'Published'
+  | "Won't Do"
+  | 'Not a Bug'
+  | 'Cannot Reproduce'
+  | 'Obsolete';
 
 export type CustomerPriority = 'Priority 1' | 'Priority 2' | 'Priority 3' | 'Priority 4';
 
@@ -28,6 +32,7 @@ export interface Vulnerability {
   reproducerIncluded: boolean;
   customerPriority?: CustomerPriority;
   status: Status;
+  resolutionReason?: string;
   ecosystem: string;
   submittedDate: string;
   lastUpdated: string;

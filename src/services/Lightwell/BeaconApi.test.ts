@@ -62,6 +62,23 @@ describe('mapLightwellVulnerability', () => {
     expect(mapped.severity).toBe('Minor');
   });
 
+  it('maps optional resolution_reason to resolutionReason', () => {
+    const mapped = mapLightwellVulnerability({
+      ...baseVulnerability,
+      status: "Won't Do",
+      resolution_reason: 'Upstream rejected a similar patch.',
+    });
+
+    expect(mapped.status).toBe("Won't Do");
+    expect(mapped.resolutionReason).toBe('Upstream rejected a similar patch.');
+  });
+
+  it('leaves resolutionReason undefined when resolution_reason is absent', () => {
+    const mapped = mapLightwellVulnerability(baseVulnerability);
+
+    expect(mapped.resolutionReason).toBeUndefined();
+  });
+
   it('maps published_versions and defaults a missing array to empty', () => {
     expect(
       mapLightwellVulnerability({

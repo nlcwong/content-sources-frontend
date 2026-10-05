@@ -2,7 +2,7 @@ import { Content, Title } from '@patternfly/react-core';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 import type { AsyncState } from '@redhat-cloud-services/types';
 
-import { STATUSES } from '../constants';
+import { CLOSED_STATUSES, PIPELINE_STATUSES } from '../constants';
 import type { BeaconPdfAdditionalData, BeaconPdfColumn, BeaconPdfData } from './beaconPdf';
 import {
   createDefaultVulnerabilityColumns,
@@ -84,6 +84,19 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
           width: 100%;
           margin: 0 0 4px;
         }
+        .beacon-pdf .beacon-pdf-closed-label {
+          font-size: 11px;
+          color: #6a6e73;
+          margin: 16px 0 8px;
+        }
+        .beacon-pdf .beacon-pdf-closed-statuses {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 48px;
+          margin: 0 0 16px;
+        }
+        .beacon-pdf--portrait .beacon-pdf-closed-statuses { gap: 32px; }
         .beacon-pdf .beacon-pdf-pipeline-item {
           display: flex;
           align-items: center;
@@ -170,17 +183,30 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
             role='list'
             aria-label='Vulnerability counts by status'
           >
-            {STATUSES.map((status, idx) => (
+            {PIPELINE_STATUSES.map((status, idx) => (
               <div key={status} className='beacon-pdf-pipeline-item' role='listitem'>
                 <div className='beacon-pdf-status-card'>
                   <div className='beacon-pdf-status-label'>{status}</div>
                   <div className='beacon-pdf-status-count'>{statusCounts[status] ?? 0}</div>
                 </div>
-                {idx < STATUSES.length - 1 ? (
+                {idx < PIPELINE_STATUSES.length - 1 ? (
                   <span className='beacon-pdf-pipeline-arrow' aria-hidden='true'>
                     &#9654;
                   </span>
                 ) : null}
+              </div>
+            ))}
+          </div>
+          <div className='beacon-pdf-closed-label'>Closed without remediation</div>
+          <div
+            className='beacon-pdf-closed-statuses'
+            role='list'
+            aria-label='Vulnerability counts by closed resolution'
+          >
+            {CLOSED_STATUSES.map((status) => (
+              <div key={status} className='beacon-pdf-stat' role='listitem'>
+                <div className='beacon-pdf-stat-value'>{statusCounts[status] ?? 0}</div>
+                <div className='beacon-pdf-stat-label'>{status}</div>
               </div>
             ))}
           </div>

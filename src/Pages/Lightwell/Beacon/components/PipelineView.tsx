@@ -1,6 +1,6 @@
 import { Flex, FlexItem } from '@patternfly/react-core';
 
-import { STATUSES } from '../constants';
+import { PIPELINE_STATUSES } from '../constants';
 import { StatusCard } from './StatusCard';
 
 type PipelineViewProps = {
@@ -9,7 +9,7 @@ type PipelineViewProps = {
 };
 
 export function PipelineView({ statusCounts = {}, className }: PipelineViewProps) {
-  const statusStats = STATUSES.map((status) => ({
+  const statusStats = PIPELINE_STATUSES.map((status) => ({
     status,
     count: statusCounts[status] ?? 0,
   }));
