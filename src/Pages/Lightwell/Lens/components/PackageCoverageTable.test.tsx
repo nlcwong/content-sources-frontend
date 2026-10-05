@@ -2,8 +2,10 @@ import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import PackageCoverageTable from './PackageCoverageTable';
+import { usePackageCoverageTable } from '../hooks/usePackageCoverageTable';
 import { useCoverageReportPackagesQuery } from 'services/Lightwell/CoverageReportsQueries';
 import { defaultCoverageReportPackagesItem, ReactQueryTestWrapper } from 'testingHelpers';
+import type { EcosystemInfo } from '../utils/ecosystem';
 
 jest.mock('services/Lightwell/CoverageReportsQueries', () => ({
   ...jest.requireActual('services/Lightwell/CoverageReportsQueries'),
@@ -15,10 +17,21 @@ jest.mock('Pages/Lightwell/constants', () => ({
   LIGHTWELL_LENS_USE_MOCK: false,
 }));
 
-const renderTable = (ecosystems = ['Java', 'Python', 'JavaScript']) =>
+const PackageCoverageTableHarness = ({ ecosystems }: { ecosystems: EcosystemInfo[] }) => {
+  const table = usePackageCoverageTable(ecosystems);
+  return <PackageCoverageTable uuid='test-uuid' ecosystems={ecosystems} table={table} />;
+};
+
+const DEFAULT_ECOSYSTEMS: EcosystemInfo[] = [
+  { name: 'Java', supported: true },
+  { name: 'Python', supported: true },
+  { name: 'JavaScript', supported: true },
+];
+
+const renderTable = (ecosystems: EcosystemInfo[] = DEFAULT_ECOSYSTEMS) =>
   render(
     <ReactQueryTestWrapper>
-      <PackageCoverageTable uuid='test-uuid' ecosystems={ecosystems} />
+      <PackageCoverageTableHarness ecosystems={ecosystems} />
     </ReactQueryTestWrapper>,
   );
 
@@ -53,6 +66,17 @@ describe('PackageCoverageTable', () => {
     expect(screen.getByText('Exact')).toBeInTheDocument();
     expect(screen.getByText('Partial')).toBeInTheDocument();
     expect(screen.getByText('None')).toBeInTheDocument();
+  });
+
+  it('labels unsupported ecosystems in package rows', () => {
+    renderTable([
+      { name: 'Java', supported: true },
+      { name: 'Python', supported: true },
+      { name: 'JavaScript', supported: false },
+    ]);
+
+    expect(screen.getByText('JavaScript')).toBeInTheDocument();
+    expect(screen.getByText('Unsupported')).toBeInTheDocument();
   });
 
   it('renders column headers', () => {

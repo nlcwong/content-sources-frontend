@@ -1,16 +1,21 @@
+import { CodeIcon, JavaIcon, PythonIcon } from '@patternfly/react-icons';
 import {
-  compareReleasesDesc,
-  compareVersionsDesc,
   formatDistributionUrl,
   formatRepositoryName,
   getEcosystemFromContentType,
+  getEcosystemIcon,
   getRepositoryDescription,
   getRepositoryNameFromPathSlug,
   getRepositoryPathSlug,
+} from './helpers';
+import {
+  compareReleasesDesc,
+  compareVersionsDesc,
   lightwellReleaseNum,
+  pythonLightwellRelease,
   sortVersionsDesc,
   stripLightwellVersionSuffix,
-} from './helpers';
+} from './Packages/utils/versions';
 
 describe('getEcosystemFromContentType', () => {
   it('returns the ecosystem for a known content type', () => {
@@ -25,6 +30,22 @@ describe('getEcosystemFromContentType', () => {
   it('returns undefined for missing or unknown content type', () => {
     expect(getEcosystemFromContentType()).toBeUndefined();
     expect(getEcosystemFromContentType('unknown')).toBeUndefined();
+  });
+});
+
+describe('getEcosystemIcon', () => {
+  it('returns the icon for a known ecosystem or content type, regardless of case', () => {
+    expect(getEcosystemIcon('JAVA').type).toBe(JavaIcon);
+    expect(getEcosystemIcon('maven').type).toBe(JavaIcon);
+    expect(getEcosystemIcon('MAVEN').type).toBe(JavaIcon);
+    expect(getEcosystemIcon('Python').type).toBe(PythonIcon);
+    expect(getEcosystemIcon('python').type).toBe(PythonIcon);
+  });
+
+  it('returns the generic icon for a missing or unknown ecosystem or content type', () => {
+    expect(getEcosystemIcon().type).toBe(CodeIcon);
+    expect(getEcosystemIcon('rust').type).toBe(CodeIcon);
+    expect(getEcosystemIcon('npm').type).toBe(CodeIcon);
   });
 });
 
@@ -116,6 +137,11 @@ describe('stripLightwellVersionSuffix', () => {
   it('returns the original version when no Lightwell suffix exists', () => {
     expect(stripLightwellVersionSuffix('1.2.3')).toBe('1.2.3');
   });
+
+  it('separates a Python local release from its upstream version', () => {
+    expect(stripLightwellVersionSuffix('3.0.1+rhlw.12')).toBe('3.0.1');
+    expect(pythonLightwellRelease('3.0.1+rhlw.12')).toBe('+rhlw.12');
+  });
 });
 
 describe('lightwellReleaseNum', () => {
@@ -125,6 +151,7 @@ describe('lightwellReleaseNum', () => {
 
   it('extracts release number from a release suffix', () => {
     expect(lightwellReleaseNum('rhlw-00007')).toBe(7);
+    expect(lightwellReleaseNum('+rhlw.12')).toBe(12);
   });
 
   it('returns 0 when no trailing number exists', () => {

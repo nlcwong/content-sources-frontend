@@ -19,7 +19,9 @@ import {
   ToolbarItem,
   Timestamp,
 } from '@patternfly/react-core';
-import { CodeIcon, JavaIcon, PythonIcon } from '@patternfly/react-icons';
+import { useRemoteHook } from '@scalprum/react-core';
+import { useFlag } from '@unleash/proxy-client-react';
+import { CodeIcon } from '@patternfly/react-icons';
 import { SkeletonTable } from '@patternfly/react-component-groups';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import text from '@patternfly/react-styles/css/utilities/Text/text';
@@ -44,11 +46,10 @@ import { useLightwellRepositoryPackagesQuery } from 'services/Content/ContentQue
 import { RepositoryPackageItem } from 'services/Content/ContentApi';
 import { getMockLightwellPackages } from '../mockPackages';
 import {
-  compareReleasesDesc,
   formatDistributionUrl,
   formatRepositoryName,
+  getEcosystemIcon,
   getRepositoryDescription,
-  sortVersionsDesc,
 } from '../helpers';
 import Hide from 'components/Hide/Hide';
 import { LIGHTWELL_USE_MOCK, lightwellPkgsPerPageKey } from '../constants';
@@ -56,11 +57,20 @@ import EmptyTableState from 'components/EmptyTableState/EmptyTableState';
 import Loader from 'components/Loader';
 import LightwellNotFound from '../components/LightwellNotFound';
 import ConnectRepositoryModal from '../Repositories/components/ConnectRepositoryModal';
-import { buildVersionFromRelease } from './components/PackageReleasesTab';
 import CopyLabel from './components/CopyLabel';
+import type { PackageCoordinate } from './types';
+import { formatReleaseCopyText, getPackageCoordinate } from './utils/format';
+import {
+  compareReleasesDesc,
+  pythonLightwellRelease,
+  sortVersionsDesc,
+  stripLightwellVersionSuffix,
+  toLightwellRelease,
+} from './utils/versions';
 import RemediatedDataWarning from '../RemediatedDataWarning';
 import useLightwellRepository from '../../../Hooks/Lightwell/useLightwellRepository';
 import { useLightwellNavigateTo } from '../../../Hooks/Lightwell/navigation/useLightwellNavigateTo';
+import { useLightwellRootPath } from '../../../Hooks/Lightwell/navigation/useLightwellRootPath';
 import { useLightwellPackagesParams } from '../../../Hooks/Lightwell/useLightwellPackagesParams';
 
 const useStyles = createUseStyles({
@@ -97,13 +107,26 @@ type MappedPackage = {
   last_updated: string;
 };
 
-const mapRepositoryPackage = (pkg: RepositoryPackageItem): MappedPackage => {
+const mapRepositoryPackage = (
+  pkg: RepositoryPackageItem,
+  isPythonRemediated: boolean,
+): MappedPackage => {
   const latestCreatedAt = pkg.latest_releases
     .map((release) => release.created_at)
     .sort()
     .at(-1);
 
-  const sortedReleases = [...pkg.latest_releases].sort(compareReleasesDesc);
+  const sortedReleases = pkg.latest_releases
+    .map((release) =>
+      isPythonRemediated
+        ? {
+            ...release,
+            version: stripLightwellVersionSuffix(release.version),
+            release: release.release || pythonLightwellRelease(release.version),
+          }
+        : release,
+    )
+    .sort(compareReleasesDesc);
 
   const seenVersions = new Set<string>();
   const latestReleasePerVersion = sortedReleases.filter((release) => {
@@ -115,7 +138,11 @@ const mapRepositoryPackage = (pkg: RepositoryPackageItem): MappedPackage => {
   const sortedVersions =
     latestReleasePerVersion.length > 0
       ? latestReleasePerVersion.map((release) => release.version)
-      : sortVersionsDesc(pkg.versions);
+      : sortVersionsDesc(
+          isPythonRemediated
+            ? [...new Set(pkg.versions.map(stripLightwellVersionSuffix))]
+            : pkg.versions,
+        );
 
   return {
     group_id: pkg.group,
@@ -140,16 +167,13 @@ type StackedItemsCellProps<T> = {
 };
 
 type PackageCopyLabelProps = {
-  name: string;
-  groupId: string;
+  packageCoordinate: PackageCoordinate;
   version: string;
-  isPython: boolean;
 };
 
-const PackageCopyLabel = ({ name, groupId, version, isPython }: PackageCopyLabelProps) => {
-  const copyText = isPython ? `pip install ${name}==${version}` : `${groupId}:${name}:${version}`;
-  return <CopyLabel copyText={copyText}>{version}</CopyLabel>;
-};
+const PackageCopyLabel = ({ packageCoordinate, version }: PackageCopyLabelProps) => (
+  <CopyLabel copyText={formatReleaseCopyText(packageCoordinate, version)}>{version}</CopyLabel>
+);
 
 const StackedItemsCell = <T,>({
   items,
@@ -190,6 +214,8 @@ const StackedItemsCell = <T,>({
   );
 };
 
+const DROP_LAST_CHROME_SEGMENT_OPTIONS = { dropLastChromeSegment: true };
+
 const PackagesTable = () => {
   const classes = useStyles();
 
@@ -226,22 +252,47 @@ const PackagesTable = () => {
     isFetching: isPackagesFetching,
   } = apiPackagesQuery;
 
+  const isPythonRemediated =
+    repository?.content_type === 'python' && repository?.security_level === 'remediated';
+
   const { packages, packageCount } = useMemo(() => {
     if (useMock) {
       const mockPackages = getMockLightwellPackages(repoUUID, debouncedSearch);
       const offset = (page - 1) * perPage;
       return {
-        packages: mockPackages.slice(offset, offset + perPage).map(mapRepositoryPackage),
+        packages: mockPackages
+          .slice(offset, offset + perPage)
+          .map((pkg) => mapRepositoryPackage(pkg, isPythonRemediated)),
         packageCount: mockPackages.length,
       };
     }
 
     const results = packagesData?.results ?? [];
     return {
-      packages: results.map(mapRepositoryPackage),
+      packages: results.map((pkg) => mapRepositoryPackage(pkg, isPythonRemediated)),
       packageCount: packagesData?.total ?? 0,
     };
-  }, [useMock, repoUUID, debouncedSearch, page, perPage, packagesData]);
+  }, [useMock, repoUUID, debouncedSearch, page, perPage, packagesData, isPythonRemediated]);
+
+  const rootPath = useLightwellRootPath();
+  const appBreadcrumbsEnabled = useFlag('platform.chrome.app-breadcrumbs');
+  const breadcrumbRepoName = repository
+    ? formatRepositoryName(repository.content_type, repository.security_level, repository.name)
+    : '';
+
+  const breadcrumbs = useMemo(
+    () => [
+      { pathname: rootPath, title: 'Lightwell Repositories' },
+      { pathname: `${rootPath}/${repoSlug}`, title: breadcrumbRepoName },
+    ],
+    [rootPath, repoSlug, breadcrumbRepoName],
+  );
+
+  useRemoteHook({
+    scope: 'chrome',
+    module: './breadcrumbs/useReplaceBreadcrumbs',
+    args: appBreadcrumbsEnabled ? [breadcrumbs, DROP_LAST_CHROME_SEGMENT_OPTIONS] : [[]],
+  });
 
   const fetchingOrLoading = useMock ? false : isPackagesLoading || isPackagesFetching;
   const countIsZero = packageCount === 0;
@@ -251,11 +302,12 @@ const PackagesTable = () => {
     return <Loader />;
   }
 
-  if (!repository) {
+  if (isError) throw error;
+
+  if (!repository || !repoUUID) {
     return <LightwellNotFound />;
   }
 
-  if (!repoUUID || isError) throw error;
   if (!useMock && apiPackagesQuery.isError) throw apiPackagesQuery.error;
 
   const showEmptyState = countIsZero && !fetchingOrLoading;
@@ -310,14 +362,16 @@ const PackagesTable = () => {
     <>
       <Grid className={classes.topContainer}>
         <Stack>
-          <StackItem>
-            <Breadcrumb ouiaId='lightwell-packages-breadcrumb'>
-              <BreadcrumbItem component='button' onClick={() => navigateTo('repositories')}>
-                Lightwell
-              </BreadcrumbItem>
-              <BreadcrumbItem disabled>{repositoryName}</BreadcrumbItem>
-            </Breadcrumb>
-          </StackItem>
+          {!appBreadcrumbsEnabled && (
+            <StackItem>
+              <Breadcrumb ouiaId='lightwell-packages-breadcrumb'>
+                <BreadcrumbItem component='button' onClick={() => navigateTo('repositories')}>
+                  Lightwell Repositories
+                </BreadcrumbItem>
+                <BreadcrumbItem isActive>{breadcrumbRepoName}</BreadcrumbItem>
+              </Breadcrumb>
+            </StackItem>
+          )}
           <StackItem className={classes.titleWrapper}>
             <Flex
               alignItems={{ default: 'alignItemsCenter' }}
@@ -326,9 +380,7 @@ const PackagesTable = () => {
             >
               <Flex alignItems={{ default: 'alignItemsCenter' }} gap={{ default: 'gapSm' }}>
                 <FlexItem>
-                  <Icon size='xl'>
-                    {repository?.content_type === 'maven' ? <JavaIcon /> : <PythonIcon />}
-                  </Icon>
+                  <Icon size='xl'>{getEcosystemIcon(repository?.content_type)}</Icon>
                 </FlexItem>
                 <FlexItem>
                   <Title headingLevel='h1' ouiaId='lightwell-packages-header'>
@@ -430,13 +482,16 @@ const PackagesTable = () => {
                         const { name, group_id, versions, latest_releases, last_updated } = pkg;
                         const packageKey = `${group_id}-${name}`;
                         const isCollapsed = !expandedPackages.has(packageKey);
+                        const packageCoordinate = getPackageCoordinate({
+                          name,
+                          group: group_id,
+                          isMaven,
+                        });
 
                         const renderCopyLabel = (version: string) => (
                           <PackageCopyLabel
-                            name={name}
-                            groupId={group_id}
+                            packageCoordinate={{ name, group: group_id, isPython }}
                             version={version}
-                            isPython={isPython}
                           />
                         );
 
@@ -457,7 +512,7 @@ const PackagesTable = () => {
                                   })
                                 }
                               >
-                                {isMaven ? `${group_id}:${name}` : name}
+                                {packageCoordinate}
                               </Button>
                             </Td>
                             <Td dataLabel={columnHeaders[1].title}>
@@ -482,9 +537,9 @@ const PackagesTable = () => {
                                   isCollapsed={isCollapsed}
                                   onToggle={togglePackageExpanded}
                                   renderItem={(release) =>
-                                    renderCopyLabel(buildVersionFromRelease(release))
+                                    renderCopyLabel(toLightwellRelease(release))
                                   }
-                                  getItemKey={(release) => buildVersionFromRelease(release)}
+                                  getItemKey={(release) => toLightwellRelease(release)}
                                 />
                               </Td>
                             ) : null}

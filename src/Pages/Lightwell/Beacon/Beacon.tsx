@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useMemo, useCallback, useEffect, useState } from 'react';
+import { useRemoteHook } from '@scalprum/react-core';
+import { useFlag } from '@unleash/proxy-client-react';
 import {
   Button,
   Card,
@@ -27,6 +29,7 @@ import HelpIcon from '@patternfly/react-icons/dist/esm/icons/help-icon';
 import UserIcon from '@patternfly/react-icons/dist/esm/icons/user-icon';
 
 import useDebounce from 'Hooks/useDebounce';
+import { useLightwellRootPath } from '../../../Hooks/Lightwell/navigation/useLightwellRootPath';
 import LightwellPageHeader from '../components/LightwellPageHeader';
 import { SEVERITIES, STATUSES } from './constants';
 import type { Severity, Status } from './types';
@@ -40,7 +43,7 @@ import {
   type BeaconVulnerabilityFilters,
   type BeaconVulnerabilityFlag,
 } from 'services/Lightwell/BeaconApi';
-import { useLtwlsuptTicketIdsQuery } from 'services/Lightwell/BeaconQueries';
+import { useBeaconStatusQuery, useLtwlsuptTicketIdsQuery } from 'services/Lightwell/BeaconQueries';
 import { useCustomerIdsQuery } from 'services/Lightwell/CustomerQueries';
 import {
   createDefaultVulnerabilityColumns,
@@ -76,7 +79,22 @@ function buildBeaconFilters(
   return hasFilters ? filters : undefined;
 }
 
+const DROP_LAST_CHROME_SEGMENT_OPTIONS = { dropLastChromeSegment: true };
+
 const Beacon = () => {
+  const rootPath = useLightwellRootPath();
+  const appBreadcrumbsEnabled = useFlag('platform.chrome.app-breadcrumbs');
+  const breadcrumbs = useMemo(
+    () => [{ pathname: `${rootPath}/beacon`, title: 'Lightwell Beacon' }],
+    [rootPath],
+  );
+
+  useRemoteHook({
+    scope: 'chrome',
+    module: './breadcrumbs/useReplaceBreadcrumbs',
+    args: appBreadcrumbsEnabled ? [breadcrumbs, DROP_LAST_CHROME_SEGMENT_OPTIONS] : [[]],
+  });
+
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>();
   const [selectedSeverities, setSelectedSeverities] = useState<Set<Severity>>(new Set());
   const [selectedStatuses, setSelectedStatuses] = useState<Set<Status>>(new Set());
@@ -155,6 +173,7 @@ const Beacon = () => {
     error,
   } = useBeaconData(selectedCustomerId, queryFilters, pagination);
   const { data: ltwlsuptTicketIds = [] } = useLtwlsuptTicketIdsQuery(selectedCustomerId);
+  const { data: lastUpdated } = useBeaconStatusQuery();
   const { isLoading: isLoadingCustomers } = useCustomerIdsQuery();
 
   const isLoading = !displayData && isLoadingDisplay;
@@ -212,7 +231,17 @@ const Beacon = () => {
       <LightwellPageHeader
         title='Beacon'
         ouiaId='lightwell-beacon-header'
-        description='Understand the status of your Lightwell submissions'
+        description={
+          <Content component='p' ouiaId='lightwell-beacon-header'>
+            Understand the status of your Lightwell submissions
+            {lastUpdated ? (
+              <>
+                <br />
+                Last updated: {lastUpdated}
+              </>
+            ) : null}
+          </Content>
+        }
         actions={
           <ExportMenu
             customerId={selectedCustomerId}

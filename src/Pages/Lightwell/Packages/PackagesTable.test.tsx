@@ -33,6 +33,19 @@ jest.mock('Hooks/Lightwell/navigation/useLightwellNavigateTo', () => ({
   useLightwellNavigateTo: jest.fn(),
 }));
 
+jest.mock('Hooks/Lightwell/navigation/useLightwellRootPath', () => ({
+  useLightwellRootPath: jest.fn(() => '/lightwell'),
+}));
+
+const mockUseRemoteHook = jest.fn();
+jest.mock('@scalprum/react-core', () => ({
+  useRemoteHook: (...args: unknown[]) => mockUseRemoteHook(...args),
+}));
+
+jest.mock('@unleash/proxy-client-react', () => ({
+  useFlag: jest.fn(() => true),
+}));
+
 const mockUseParams = jest.fn(() => ({
   repoName: getRepositoryPathSlug(
     defaultLightwellContentItem.content_type,
@@ -162,7 +175,7 @@ it('renders with a single package', async () => {
 
   renderPackagesTable();
 
-  expect(screen.queryAllByText('Java Validated')).toHaveLength(2);
+  expect(screen.queryAllByText('Java Validated')).toHaveLength(1);
   expect(
     await screen.findByText('https://example.com/lightwell/java/validated'),
   ).toBeInTheDocument();
@@ -231,12 +244,25 @@ it('navigates to package details when a package name is clicked', async () => {
   });
 });
 
-it('navigates to repositories when Lightwell breadcrumb is clicked', async () => {
+it('registers breadcrumbs with Chrome via useRemoteHook', async () => {
   renderPackagesTable();
 
-  await userEvent.click(await screen.findByRole('button', { name: 'Lightwell' }));
+  await screen.findByRole('heading', { name: 'Java Validated' });
 
-  expect(mockNavigateTo).toHaveBeenCalledWith('repositories');
+  expect(mockUseRemoteHook).toHaveBeenCalledWith({
+    scope: 'chrome',
+    module: './breadcrumbs/useReplaceBreadcrumbs',
+    args: [
+      [
+        { pathname: '/lightwell', title: 'Lightwell Repositories' },
+        {
+          pathname: `/lightwell/${getRepositoryPathSlug(defaultLightwellContentItem.content_type, defaultLightwellContentItem.security_level)}`,
+          title: 'Java Validated',
+        },
+      ],
+      { dropLastChromeSegment: true },
+    ],
+  });
 });
 
 it('copies the maven coordinate when a validated version label is clicked', async () => {
@@ -378,6 +404,38 @@ it('renders python remediated packages with a Latest release column', async () =
   expect(await screen.findByRole('heading', { name: 'Python Remediated' })).toBeInTheDocument();
   expect(screen.getByRole('columnheader', { name: 'Latest release' })).toBeInTheDocument();
   expect(await screen.findByRole('button', { name: '2.32.0.rhlw-0002' })).toBeInTheDocument();
+});
+
+it('groups published Python releases and copies the latest version', async () => {
+  const writeText = mockClipboard();
+  mockUseParams.mockReturnValue({ repoName: getRepositoryPathSlug('python', 'remediated') });
+  mockRepository(defaultPythonRemediatedContentItem);
+  (useLightwellRepositoryPackagesQuery as jest.Mock).mockImplementation(() =>
+    mockPackagesQuery({
+      data: {
+        ...defaultLightwellRepositoryPackageResponse,
+        results: [
+          {
+            group: '',
+            name: 'lightwell-fixture',
+            versions: ['3.0.1+rhlw.1', '3.0.1+rhlw.2'],
+            latest_releases: [
+              { version: '3.0.1+rhlw.1', release: '', created_at: '2026-07-01T00:00:00Z' },
+              { version: '3.0.1+rhlw.2', release: '', created_at: '2026-07-02T00:00:00Z' },
+            ],
+          },
+        ],
+        total: 1,
+      },
+    }),
+  );
+
+  renderPackagesTable();
+
+  expect(await screen.findByText('3.0.1')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: '3.0.1+rhlw.1' })).not.toBeInTheDocument();
+  await clickCopyButton('3.0.1+rhlw.2');
+  expect(writeText).toHaveBeenCalledWith('pip install lightwell-fixture==3.0.1+rhlw.2');
 });
 
 it('clears the search filter from the filtered empty state', async () => {

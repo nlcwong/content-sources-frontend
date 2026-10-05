@@ -15,6 +15,16 @@ import { useLightwellNotificationPrefs } from './hooks/useLightwellNotificationP
 import { useLightwellNavigateTo } from '../../../Hooks/Lightwell/navigation/useLightwellNavigateTo';
 import { useLightwellRepoNotifications } from './hooks/useLightwellRepoNotifications';
 
+const mockUseRemoteHook = jest.fn();
+
+jest.mock('@scalprum/react-core', () => ({
+  useRemoteHook: (...args: unknown[]) => mockUseRemoteHook(...args),
+}));
+
+jest.mock('@unleash/proxy-client-react', () => ({
+  useFlag: jest.fn(() => true),
+}));
+
 jest.mock('services/Content/ContentQueries', () => ({
   useContentListQuery: jest.fn(),
   useLightwellRepositoryPackageCountsQuery: jest.fn(),
@@ -24,6 +34,10 @@ const mockNavigateTo = jest.fn();
 
 jest.mock('Hooks/Lightwell/navigation/useLightwellNavigateTo', () => ({
   useLightwellNavigateTo: jest.fn(),
+}));
+
+jest.mock('Hooks/Lightwell/navigation/useLightwellRootPath', () => ({
+  useLightwellRootPath: jest.fn(() => '/lightwell'),
 }));
 
 jest.mock('../constants', () => ({
@@ -331,7 +345,7 @@ it('unsubscribes from repository notifications when toggle is turned off', async
   (useContentListQuery as jest.Mock).mockImplementation(() => ({
     isLoading: false,
     data: {
-      data: [defaultPythonRemediatedContentItem],
+      data: [javaRemediatedContentItem],
       meta: { count: 1, limit: 20, offset: 0 },
     },
   }));
@@ -339,12 +353,12 @@ it('unsubscribes from repository notifications when toggle is turned off', async
   renderRepositoriesTable();
 
   const toggle = await screen.findByRole('switch', {
-    name: `Toggle notifications for ${defaultPythonRemediatedContentItem.name}`,
+    name: `Toggle notifications for ${javaRemediatedContentItem.name}`,
   });
   expect(toggle).toBeChecked();
 
   await user.click(toggle);
-  expect(mockSetRepoSubscribed).toHaveBeenCalledWith('python-remediated', []);
+  expect(mockSetRepoSubscribed).toHaveBeenCalledWith('java-remediated', []);
 });
 
 it('renders java predisclosure repository', async () => {
@@ -424,4 +438,91 @@ it('subscribes to predisclosure repository notifications when toggle is turned o
     'critical',
     'important',
   ]);
+});
+
+it('shows notification toggle for python remediated repositories', async () => {
+  (useLightwellNotificationPrefs as jest.Mock).mockReturnValue({
+    prefs: { enabled: true, minimumSeverity: 'critical' },
+    isLoading: false,
+    isError: false,
+    shouldExposeNotifications: true,
+  });
+  (useContentListQuery as jest.Mock).mockImplementation(() => ({
+    isLoading: false,
+    data: {
+      data: [defaultPythonRemediatedContentItem],
+      meta: { count: 1, limit: 20, offset: 0 },
+    },
+  }));
+
+  renderRepositoriesTable();
+
+  await screen.findByText('Python Remediated');
+
+  expect(
+    screen.getByRole('switch', {
+      name: `Toggle notifications for ${defaultPythonRemediatedContentItem.name}`,
+    }),
+  ).toBeInTheDocument();
+});
+
+it('subscribes to python remediated repository notifications when toggle is turned on', async () => {
+  const user = userEvent.setup();
+  const mockSetRepoSubscribed = jest.fn();
+  (useLightwellNotificationPrefs as jest.Mock).mockReturnValue({
+    prefs: { enabled: true, minimumSeverity: 'high' },
+    isLoading: false,
+    isError: false,
+    shouldExposeNotifications: true,
+  });
+  (useLightwellRepoNotifications as jest.Mock).mockReturnValue({
+    isRepoSubscribed: jest.fn().mockReturnValue(false),
+    setRepoSubscribed: mockSetRepoSubscribed,
+    isLoading: false,
+    isError: false,
+    pendingEventType: undefined,
+  });
+  (useContentListQuery as jest.Mock).mockImplementation(() => ({
+    isLoading: false,
+    data: {
+      data: [defaultPythonRemediatedContentItem],
+      meta: { count: 1, limit: 20, offset: 0 },
+    },
+  }));
+
+  renderRepositoriesTable();
+
+  const toggle = await screen.findByRole('switch', {
+    name: `Toggle notifications for ${defaultPythonRemediatedContentItem.name}`,
+  });
+  expect(toggle).not.toBeChecked();
+
+  await user.click(toggle);
+  expect(mockSetRepoSubscribed).toHaveBeenCalledWith('python-remediated', [
+    'critical',
+    'important',
+  ]);
+});
+
+it('registers breadcrumbs with Chrome via useRemoteHook', async () => {
+  (useContentListQuery as jest.Mock).mockImplementation(() => ({
+    isLoading: false,
+    data: {
+      data: [defaultLightwellContentItem],
+      meta: { count: 1, limit: 20, offset: 0 },
+    },
+  }));
+
+  renderRepositoriesTable();
+
+  await screen.findByText('Java Validated');
+
+  expect(mockUseRemoteHook).toHaveBeenCalledWith({
+    scope: 'chrome',
+    module: './breadcrumbs/useReplaceBreadcrumbs',
+    args: [
+      expect.arrayContaining([expect.objectContaining({ title: 'Lightwell Repositories' })]),
+      { dropLastChromeSegment: true },
+    ],
+  });
 });

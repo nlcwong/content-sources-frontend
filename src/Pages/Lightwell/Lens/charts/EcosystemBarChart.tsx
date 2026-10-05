@@ -12,8 +12,11 @@ import { useMemo, type CSSProperties, type Ref } from 'react';
 import {
   CATEGORY_AXIS_STYLE,
   COUNT_AXIS_STYLE,
+  ECOSYSTEM_BAR_LEGEND_SWATCH_SIZE,
   ECOSYSTEM_CHART_DOMAIN_PADDING,
   ECOSYSTEM_CHART_PADDING,
+} from './chartTheme';
+import {
   formatIntegerTicks,
   getEcosystemChartModel,
   getLegendItems,
@@ -21,6 +24,7 @@ import {
   type EcosystemChartA11yTable,
   type EcosystemChartLegendItem,
   getEcosystemChartA11yTable,
+  hasBarData,
 } from './ecosystemBarModel';
 import type { CompletedCoverageReport } from 'services/Lightwell/CoverageReportsApi';
 
@@ -37,31 +41,27 @@ export type EcosystemBarChartWebProps = EcosystemBarChartBase & {
 
 export type EcosystemBarChartPdfProps = EcosystemBarChartBase & {
   surface: 'pdf';
+  showLegend?: boolean;
 };
 
 export type EcosystemBarChartProps = EcosystemBarChartWebProps | EcosystemBarChartPdfProps;
 
-const LEGEND_SWATCH_SIZE = 12;
 const BAR_STYLE: ChartBarProps['style'] = {
   data: { fill: ({ datum }) => (datum as EcosystemBarDatum).fill },
 };
 
-const getBarTooltipProps = (kind: string, showTooltips: boolean) => {
-  if (!showTooltips) {
-    return {};
-  }
-
-  return {
-    labelComponent: <ChartTooltip constrainToVisibleArea />,
-    labels: ({ datum }: { datum: EcosystemBarDatum }) =>
-      datum.y > 0 ? `${datum.x} ${kind}: ${datum.y}` : null,
-  };
-};
+const getBarTooltipProps = (kind: string) => ({
+  labelComponent: <ChartTooltip constrainToVisibleArea />,
+  labels: ({ datum }: { datum: EcosystemBarDatum }) =>
+    datum.y > 0
+      ? `${kind}: ${datum.y} packages${datum.supported ? '' : ' (ecosystem unsupported)'}`
+      : null,
+});
 
 const getLegendSwatchStyle = (fill: string): CSSProperties => ({
   display: 'block',
-  width: LEGEND_SWATCH_SIZE,
-  height: LEGEND_SWATCH_SIZE,
+  width: ECOSYSTEM_BAR_LEGEND_SWATCH_SIZE,
+  height: ECOSYSTEM_BAR_LEGEND_SWATCH_SIZE,
   backgroundColor: fill,
 });
 
@@ -71,16 +71,16 @@ type ChartLegendProps = {
 
 const ChartLegend = ({ items }: ChartLegendProps) => (
   <Flex direction={{ default: 'column' }} gap={{ default: 'gapMd' }}>
-    {items.map(({ name, fills }) => (
-      <FlexItem key={name}>
+    {items.map(({ label, fills }) => (
+      <FlexItem key={label}>
         <Flex direction={{ default: 'column' }} gap={{ default: 'gapXs' }}>
           <FlexItem>
-            <Content component='p'>{name}</Content>
+            <Content component='p'>{label}</Content>
           </FlexItem>
           <FlexItem>
             <Flex gap={{ default: 'gapXs' }}>
               {fills.map((fill, index) => (
-                <FlexItem key={`${name}-${index}`}>
+                <FlexItem key={`${label}-${index}`}>
                   <span style={getLegendSwatchStyle(fill)} />
                 </FlexItem>
               ))}
@@ -124,18 +124,18 @@ const EcosystemBarChart = (props: EcosystemBarChartProps) => {
   const { report, width, height } = props;
   const isPdf = props.surface === 'pdf';
 
-  // Web (default): tooltips, responsive-width container, no legend. PDF: no tooltips, fixed size, legend
   const showTooltips = !isPdf;
-  const showLegend = isPdf;
+  const showLegend = isPdf && props.showLegend !== false;
   const containerRef = isPdf ? undefined : props.containerRef;
 
   const model = useMemo(() => getEcosystemChartModel(report), [report]);
-  const { exactPackages, partialPackages, unmatchedPackages, ecosystems } = model;
+  const { exactPackages, partialPackages, unmatchedPackages } = model;
 
   const plot = (
     <div ref={containerRef} aria-hidden style={isPdf ? undefined : { width: '100%' }}>
       <Chart
         horizontal
+        categories={{ x: exactPackages.map(({ x }) => x) }}
         domainPadding={ECOSYSTEM_CHART_DOMAIN_PADDING}
         height={height}
         width={width}
@@ -149,22 +149,28 @@ const EcosystemBarChart = (props: EcosystemBarChartProps) => {
           style={COUNT_AXIS_STYLE}
           label={showLegend ? 'Packages' : undefined}
         />
-        <ChartStack>
-          <ChartBar
-            data={exactPackages}
-            style={BAR_STYLE}
-            {...getBarTooltipProps('exact match', showTooltips)}
-          />
-          <ChartBar
-            data={partialPackages}
-            style={BAR_STYLE}
-            {...getBarTooltipProps('partial match', showTooltips)}
-          />
-          <ChartBar
-            data={unmatchedPackages}
-            style={BAR_STYLE}
-            {...getBarTooltipProps('no match', showTooltips)}
-          />
+        <ChartStack fillInMissingData={false}>
+          {hasBarData(exactPackages) && (
+            <ChartBar
+              data={exactPackages.filter(({ y }) => y > 0)}
+              style={BAR_STYLE}
+              {...(showTooltips ? getBarTooltipProps('Exact match') : {})}
+            />
+          )}
+          {hasBarData(partialPackages) && (
+            <ChartBar
+              data={partialPackages.filter(({ y }) => y > 0)}
+              style={BAR_STYLE}
+              {...(showTooltips ? getBarTooltipProps('Partial match') : {})}
+            />
+          )}
+          {hasBarData(unmatchedPackages) && (
+            <ChartBar
+              data={unmatchedPackages.filter(({ y }) => y > 0)}
+              style={BAR_STYLE}
+              {...(showTooltips ? getBarTooltipProps('No match') : {})}
+            />
+          )}
         </ChartStack>
       </Chart>
     </div>
@@ -182,13 +188,17 @@ const EcosystemBarChart = (props: EcosystemBarChartProps) => {
     );
   }
 
+  if (!showLegend) {
+    return plot;
+  }
+
   return (
     <Flex gap={{ default: 'gapLg' }} alignItems={{ default: 'alignItemsCenter' }}>
       <FlexItem flex={{ default: 'flex_1' }} style={{ minWidth: 0 }}>
         {plot}
       </FlexItem>
       <FlexItem>
-        <ChartLegend items={getLegendItems(ecosystems)} />
+        <ChartLegend items={getLegendItems(model)} />
       </FlexItem>
     </Flex>
   );

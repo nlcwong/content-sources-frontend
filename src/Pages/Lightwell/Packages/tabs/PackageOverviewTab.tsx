@@ -4,6 +4,7 @@ import {
   ClipboardCopyVariant,
   Content,
   Flex,
+  Skeleton,
   Stack,
   StackItem,
   Tab,
@@ -13,20 +14,25 @@ import {
   Title,
 } from '@patternfly/react-core';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
-import { createRef, useMemo, useState } from 'react';
+import React, { createRef, useMemo, useState } from 'react';
 
 import ConnectRepositoryModal from '../../Repositories/components/ConnectRepositoryModal';
 import { ConnectSnippetTab } from '../../Repositories/components/connectSnippets';
 import {
   getMavenPackageUsageSnippetTabs,
   getPythonPackageUsageSnippetTabs,
-} from './packageDependencySnippets';
+} from '../components/packageDependencySnippets';
+import LatestReleaseFixes from '../components/LatestReleaseFixes';
+import { fixesCardHeight, fixesCardWidth } from '../components/FixesCard';
+import { useLatestReleaseFixes } from '../hooks/useLatestReleaseFixes';
+import { getPackageCoordinate } from '../utils/format';
 
 type PackageOverviewTabProps = {
   isMaven: boolean;
   group: string;
   name: string;
   latestRelease: string;
+  packageVersion: string;
   hasRelease: boolean;
   summary?: string;
   sourceUrl?: string;
@@ -35,6 +41,7 @@ type PackageOverviewTabProps = {
     name: string;
     published_distribution_url: string;
     content_type: string;
+    security_level?: string;
   };
 };
 
@@ -43,6 +50,7 @@ const PackageOverviewTab = ({
   group,
   name,
   latestRelease,
+  packageVersion,
   hasRelease,
   summary,
   sourceUrl = '',
@@ -64,7 +72,20 @@ const PackageOverviewTab = ({
           }),
     [isMaven, group, name, latestRelease, sourceUrl],
   );
+
   const [activeTabKey, setActiveTabKey] = useState(tabs[0]?.eventKey ?? '');
+
+  const showLatestReleaseFixes =
+    hasRelease && Boolean(latestRelease) && repository?.security_level === 'remediated';
+
+  const packageCoordinate = getPackageCoordinate({ name, group, isMaven });
+
+  const { data: latestReleaseFixes, isLoading: isLoadingAdvisories } = useLatestReleaseFixes({
+    repository: repository?.name,
+    packageName: packageCoordinate,
+    packageVersion,
+    enabled: showLatestReleaseFixes && Boolean(packageCoordinate) && Boolean(packageVersion),
+  });
 
   const tabRefs = useMemo(
     () =>
@@ -100,28 +121,48 @@ const PackageOverviewTab = ({
   return (
     <Flex direction={{ default: 'column' }} gap={{ default: 'gapLg' }}>
       <Stack hasGutter>
-        <Title headingLevel='h2' size='lg'>
+        <Title headingLevel='h2' size='xl'>
           About this package
         </Title>
-        <Content>
-          <p>{summary ?? 'Package description not yet available.'}</p>
-          {hasRelease ? (
-            <p>
-              This package has been rebuilt by Red Hat with backported fixes for known
-              vulnerabilities. The upstream version is pinned and Red Hat applies security patches
-              as sequential releases (.rhlw suffix).
-            </p>
-          ) : (
-            <p>
-              This package has been rebuilt from source by Red Hat with no modifications. Multiple
-              upstream versions are available, each verified end-to-end through the Red Hat build
-              pipeline.
-            </p>
-          )}
+        <Content component='p' className={spacing.mb_0}>
+          {summary ?? 'Package description not yet available.'}
         </Content>
+        {hasRelease ? (
+          <Content component='p'>
+            This package has been rebuilt by Red Hat with backported fixes for known
+            vulnerabilities. The upstream version is pinned and Red Hat applies security patches as
+            sequential releases {isMaven ? '(.rhlw suffix).' : '(+rhlw suffix).'}
+          </Content>
+        ) : (
+          <Content component='p'>
+            This package has been rebuilt from source by Red Hat with no modifications. Multiple
+            upstream versions are available, each verified end-to-end through the Red Hat build
+            pipeline.
+          </Content>
+        )}
       </Stack>
+      {showLatestReleaseFixes && (
+        <>
+          {isLoadingAdvisories && !latestReleaseFixes && (
+            <Skeleton
+              height={fixesCardHeight}
+              width={fixesCardWidth}
+              style={{ maxWidth: '100%' }}
+              screenreaderText='Loading package advisories'
+            />
+          )}
+          {latestReleaseFixes && (
+            <Stack hasGutter>
+              <LatestReleaseFixes
+                total={latestReleaseFixes.total}
+                counts={latestReleaseFixes.counts}
+              />
+            </Stack>
+          )}
+        </>
+      )}
       <Stack hasGutter>
-        <Title headingLevel='h2' size='lg'>
+        <Title headingLevel='h2' size='xl'>
           How to use
         </Title>
         <Content>
