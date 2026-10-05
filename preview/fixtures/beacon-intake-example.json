@@ -1,0 +1,12 @@
+{
+  "findings": [
+    {
+      "vulnerability_id": "VULN-001",
+      "packageurl": "pkg:maven/org.example/lib@1.2.3",
+      "title": "Example vulnerability",
+      "description": "Short description of the finding.",
+      "cvss_severity": "High",
+      "cvss_score": 7.5
+    }
+  ]
+}
