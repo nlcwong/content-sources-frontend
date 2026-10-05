@@ -4,19 +4,9 @@ import {
   AlertActionCloseButton,
   Banner,
   Button,
-  Card,
-  CardBody,
   Content,
-  Dropdown,
-  DropdownItem,
-  DropdownList,
-  EmptyState,
-  EmptyStateBody,
-  EmptyStateVariant,
   Flex,
   FlexItem,
-  FormGroup,
-  MenuToggle,
   Page,
   PageSection,
   Stack,
@@ -25,25 +15,23 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from '@patternfly/react-core';
-import { InfoCircleIcon, PlusIcon, UserIcon } from '@patternfly/react-icons';
+import { InfoCircleIcon, PlusIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 
 import AccessBoundaryNote from 'Pages/Lightwell/Beacon/components/AccessBoundaryNote';
 import BeaconUploadCard from 'Pages/Lightwell/Beacon/components/BeaconUploadCard';
-import IncomingUploadsPanel from 'Pages/Lightwell/Beacon/components/IncomingUploadsPanel';
 import MySubmissionsTable from 'Pages/Lightwell/Beacon/components/MySubmissionsTable';
 import { useBeaconUpload } from 'Pages/Lightwell/Beacon/hooks/useBeaconUpload';
+import Beacon from 'Pages/Lightwell/Beacon/Beacon';
 import LightwellPageHeader from 'Pages/Lightwell/components/LightwellPageHeader';
 
 type PreviewRole = 'customer' | 'stam';
 
-const PREVIEW_CUSTOMER_IDS = ['CID-01', 'CID-214'];
-
 const PreviewBanner = () => (
   <Banner status='info' screenReaderText='Wireframe notice'>
-    <InfoCircleIcon /> Phase 1 Beacon intake wireframe (JSON contract + STAM accept). Mocked only—no
-    VPN, hosts file, or fec required.
+    <InfoCircleIcon /> Phase 1 Beacon intake wireframe on the real Beacon page (mock data). No VPN,
+    hosts file, or fec required.
   </Banner>
 );
 
@@ -134,104 +122,11 @@ const RepositoriesPlaceholder = () => (
   <PageSection>
     <Title headingLevel='h1'>Repositories (placeholder)</Title>
     <p className={spacing.mtMd}>
-      Use the top nav to open <strong>Beacon Intake</strong>. Switch Preview as to STAM for{' '}
-      <strong>Beacon</strong> incoming uploads.
+      Use the top nav to open <strong>Beacon Intake</strong>. Switch Preview as to STAM for the
+      real <strong>Beacon</strong> page with Incoming uploads.
     </p>
   </PageSection>
 );
-
-const PreviewCustomerIdSelect = ({
-  selectedCustomerId,
-  onCustomerIdChange,
-}: {
-  selectedCustomerId: string | undefined;
-  onCustomerIdChange: (customerId: string) => void;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <FormGroup label='Customer ID' fieldId='preview-customer-id-select'>
-      <Dropdown
-        id='preview-customer-id-select'
-        isOpen={isOpen}
-        onOpenChange={setIsOpen}
-        onSelect={(_, value) => {
-          onCustomerIdChange(value as string);
-          setIsOpen(false);
-        }}
-        toggle={(toggleRef) => (
-          <MenuToggle
-            ref={toggleRef}
-            id='preview-customer-id-select-toggle'
-            ouiaId='preview-customer-id-select-toggle'
-            onClick={() => setIsOpen((prev) => !prev)}
-            isExpanded={isOpen}
-            isFullWidth
-          >
-            {selectedCustomerId ?? 'Select customer ID'}
-          </MenuToggle>
-        )}
-      >
-        <DropdownList>
-          {PREVIEW_CUSTOMER_IDS.map((customerId) => (
-            <DropdownItem key={customerId} value={customerId}>
-              {customerId}
-            </DropdownItem>
-          ))}
-        </DropdownList>
-      </Dropdown>
-    </FormGroup>
-  );
-};
-
-const BeaconPage = () => {
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>();
-
-  return (
-    <>
-      <LightwellPageHeader
-        title='Beacon'
-        description='Understand the status of your Lightwell submissions'
-      />
-      <PageSection hasBodyWrapper={false} className={`${spacing.pxLg} ${spacing.pbLg}`}>
-        <Stack hasGutter>
-          <StackItem style={{ maxWidth: '20rem' }}>
-            <PreviewCustomerIdSelect
-              selectedCustomerId={selectedCustomerId}
-              onCustomerIdChange={setSelectedCustomerId}
-            />
-          </StackItem>
-          {selectedCustomerId ? (
-            <StackItem>
-              <IncomingUploadsPanel customerId={selectedCustomerId} />
-            </StackItem>
-          ) : (
-            <StackItem>
-              <EmptyState
-                headingLevel='h2'
-                icon={UserIcon}
-                titleText='Select customer'
-                variant={EmptyStateVariant.sm}
-              >
-                <EmptyStateBody>
-                  Select a customer ID first to review their incoming vulnerability submissions.
-                </EmptyStateBody>
-              </EmptyState>
-            </StackItem>
-          )}
-          <StackItem>
-            <Card isGlass>
-              <CardBody>
-                Vulnerability table and filters are omitted in this wireframe. Intake submissions for{' '}
-                <Content component='code'>CID-01</Content> appear above after a customer upload.
-              </CardBody>
-            </Card>
-          </StackItem>
-        </Stack>
-      </PageSection>
-    </>
-  );
-};
 
 const UploadPage = () => {
   const { isReceived, uploadProps, startOver, submissionIds, findingCount } = useBeaconUpload();
@@ -345,7 +240,7 @@ const App = () => {
         <TopNav role={role} />
         <Routes>
           <Route path='/' element={<RepositoriesPlaceholder />} />
-          <Route path='/beacon' element={<BeaconPage />} />
+          <Route path='/beacon' element={<Beacon />} />
           <Route
             path='/beacon/upload'
             element={role === 'customer' ? <UploadPage /> : <Navigate to='/beacon' replace />}

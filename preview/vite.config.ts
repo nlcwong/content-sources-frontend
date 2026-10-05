@@ -8,11 +8,13 @@ import previewPackage from './package.json';
 
 const previewDir = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(previewDir, '..');
+const srcRoot = path.resolve(repoRoot, 'src');
 const previewNodeModules = path.resolve(previewDir, 'node_modules');
 const stubsDir = path.resolve(previewDir, 'src/stubs');
 
 const packageAliases = Object.keys(previewPackage.dependencies).reduce<Record<string, string>>(
   (aliases, dependency) => {
+    // Prefer preview node_modules so PatternFly/React stay singletons.
     aliases[dependency] = path.resolve(previewNodeModules, dependency);
     return aliases;
   },
@@ -29,11 +31,60 @@ export default defineConfig({
         replacement: path.resolve(stubsDir, 'LightwellPageHeader.tsx'),
       },
       {
+        // Relative imports of LightwellPageHeader (e.g. from Beacon.tsx) bypass package aliases.
+        find: path.resolve(srcRoot, 'Pages/Lightwell/components/LightwellPageHeader.tsx'),
+        replacement: path.resolve(stubsDir, 'LightwellPageHeader.tsx'),
+      },
+      {
+        find: 'Pages/Lightwell/constants',
+        replacement: path.resolve(stubsDir, 'lightwellConstants.ts'),
+      },
+      {
+        find: '@redhat-cloud-services/frontend-components/useChrome',
+        replacement: path.resolve(stubsDir, 'useChrome.ts'),
+      },
+      {
+        find: '@redhat-cloud-services/frontend-components',
+        replacement: path.resolve(stubsDir, 'frontendComponents.tsx'),
+      },
+      {
+        find: '@redhat-cloud-services/types',
+        replacement: path.resolve(stubsDir, 'rhcsTypes.ts'),
+      },
+      {
+        find: 'Hooks/useNotification',
+        replacement: path.resolve(stubsDir, 'useNotification.ts'),
+      },
+      {
+        find: 'Hooks/useErrorNotification',
+        replacement: path.resolve(stubsDir, 'useErrorNotification.ts'),
+      },
+      {
+        find: 'Hooks',
+        replacement: path.resolve(srcRoot, 'Hooks'),
+      },
+      {
+        find: 'services',
+        replacement: path.resolve(srcRoot, 'services'),
+      },
+      {
+        find: 'helpers',
+        replacement: path.resolve(srcRoot, 'helpers.ts'),
+      },
+      {
         find: 'Pages',
-        replacement: path.resolve(repoRoot, 'src/Pages'),
+        replacement: path.resolve(srcRoot, 'Pages'),
       },
       ...Object.entries(packageAliases).map(([find, replacement]) => ({ find, replacement })),
     ],
+  },
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // Silence legacy Sass warnings from PatternFly/app styles in preview.
+        quietDeps: true,
+      },
+    },
   },
   server: {
     fs: {

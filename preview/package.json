@@ -8,18 +8,26 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@patternfly/react-catalog-view-extension": "^6.5.0",
+    "@patternfly/react-component-groups": "^6.7.0",
     "@patternfly/react-core": "^6.3.1",
     "@patternfly/react-icons": "^6.3.1",
     "@patternfly/react-styles": "^6.3.1",
     "@patternfly/react-table": "^6.3.1",
+    "@tanstack/react-query": "^5.103.2",
+    "axios": "^1.20.0",
+    "dayjs": "^1.11.23",
+    "lodash": "^4.18.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.30.4"
   },
   "devDependencies": {
+    "@types/lodash": "^4.17.16",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.7.0",
+    "sass": "^1.89.0",
     "typescript": "^5.9.2",
     "vite": "^6.3.5"
   }
