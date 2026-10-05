@@ -85,7 +85,7 @@ export default defineConfig({
       },
       {
         find: 'helpers',
-        replacement: path.resolve(srcRoot, 'helpers.ts'),
+        replacement: path.resolve(stubsDir, 'helpers.ts'),
       },
       {
         find: 'Pages',
