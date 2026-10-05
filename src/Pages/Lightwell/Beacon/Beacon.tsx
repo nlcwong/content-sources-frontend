@@ -27,12 +27,14 @@ import {
 } from '@patternfly/react-catalog-view-extension';
 import HelpIcon from '@patternfly/react-icons/dist/esm/icons/help-icon';
 import UserIcon from '@patternfly/react-icons/dist/esm/icons/user-icon';
+import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
 
 import useDebounce from 'Hooks/useDebounce';
 import { useLightwellRootPath } from '../../../Hooks/Lightwell/navigation/useLightwellRootPath';
 import LightwellPageHeader from '../components/LightwellPageHeader';
 import { SEVERITIES, STATUSES } from './constants';
 import type { Severity, Status } from './types';
+import AccessBoundaryNote from './components/AccessBoundaryNote';
 import { CustomerIdSelect } from './components/CustomerIdSelect';
 import { ExportMenu } from './components/ExportMenu';
 import IncomingUploadsPanel from './components/IncomingUploadsPanel';
@@ -228,6 +230,13 @@ const Beacon = () => {
 
   return (
     <>
+      <PageSection
+        aria-label='Beacon access boundary'
+        hasBodyWrapper={false}
+        className={`${spacing.pb_0} ${spacing.pxLg} ${spacing.plXs}`}
+      >
+        <AccessBoundaryNote audience='stam' />
+      </PageSection>
       <LightwellPageHeader
         title='Beacon'
         ouiaId='lightwell-beacon-header'

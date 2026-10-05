@@ -12,12 +12,10 @@ import {
   Stack,
   StackItem,
   Title,
-  ToggleGroup,
-  ToggleGroupItem,
 } from '@patternfly/react-core';
 import { InfoCircleIcon, PlusIcon } from '@patternfly/react-icons';
 import spacing from '@patternfly/react-styles/css/utilities/Spacing/spacing';
-import { Link, Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 
 import AccessBoundaryNote from 'Pages/Lightwell/Beacon/components/AccessBoundaryNote';
 import BeaconUploadCard from 'Pages/Lightwell/Beacon/components/BeaconUploadCard';
@@ -26,8 +24,6 @@ import { useBeaconUpload } from 'Pages/Lightwell/Beacon/hooks/useBeaconUpload';
 import Beacon from 'Pages/Lightwell/Beacon/Beacon';
 import LightwellPageHeader from 'Pages/Lightwell/components/LightwellPageHeader';
 
-type PreviewRole = 'customer' | 'stam';
-
 const PreviewBanner = () => (
   <Banner status='info' screenReaderText='Wireframe notice'>
     <InfoCircleIcon /> Phase 1 Beacon intake wireframe on the real Beacon page (mock data). No VPN,
@@ -35,55 +31,9 @@ const PreviewBanner = () => (
   </Banner>
 );
 
-const RoleToggle = ({
-  role,
-  onChange,
-}: {
-  role: PreviewRole;
-  onChange: (next: PreviewRole) => void;
-}) => {
-  const navigate = useNavigate();
-
-  return (
-    <div className={`${spacing.pxLg} ${spacing.pbSm}`}>
-      <Flex
-        gap={{ default: 'gapMd' }}
-        alignItems={{ default: 'alignItemsCenter' }}
-        flexWrap={{ default: 'wrap' }}
-      >
-        <FlexItem>
-          <Title headingLevel='h2' size='md'>
-            Preview as
-          </Title>
-        </FlexItem>
-        <FlexItem>
-          <ToggleGroup aria-label='Preview role'>
-            <ToggleGroupItem
-              text='Customer'
-              isSelected={role === 'customer'}
-              onChange={() => {
-                onChange('customer');
-                navigate('/beacon/upload');
-              }}
-            />
-            <ToggleGroupItem
-              text='STAM'
-              isSelected={role === 'stam'}
-              onChange={() => {
-                onChange('stam');
-                navigate('/beacon');
-              }}
-            />
-          </ToggleGroup>
-        </FlexItem>
-      </Flex>
-    </div>
-  );
-};
-
-const TopNav = ({ role }: { role: PreviewRole }) => {
+const TopNav = () => {
   const { pathname } = useLocation();
-  const customerItems = [
+  const items = [
     { to: '/', label: 'Repositories', match: (p: string) => p === '/' },
     { to: '/beacon', label: 'Beacon', match: (p: string) => p === '/beacon' },
     {
@@ -92,8 +42,6 @@ const TopNav = ({ role }: { role: PreviewRole }) => {
       match: (p: string) => p.includes('/upload'),
     },
   ];
-  const stamItems = [{ to: '/beacon', label: 'Beacon', match: (p: string) => p === '/beacon' }];
-  const items = role === 'customer' ? customerItems : stamItems;
 
   return (
     <nav aria-label='Lightwell preview' className={`${spacing.pxLg} ${spacing.pySm}`}>
@@ -122,8 +70,8 @@ const RepositoriesPlaceholder = () => (
   <PageSection>
     <Title headingLevel='h1'>Repositories (placeholder)</Title>
     <p className={spacing.mtMd}>
-      Use the top nav to open <strong>Beacon Intake</strong>. Switch Preview as to STAM for the
-      real <strong>Beacon</strong> page with Incoming uploads.
+      Use the top nav to open <strong>Beacon</strong> (STAM incoming uploads) or{' '}
+      <strong>Beacon Intake</strong> (customer submissions).
     </p>
   </PageSection>
 );
@@ -155,6 +103,13 @@ const UploadPage = () => {
 
   return (
     <>
+      <PageSection
+        aria-label='Beacon Intake access boundary'
+        hasBodyWrapper={false}
+        className={`${spacing.pb_0} ${spacing.pxLg}`}
+      >
+        <AccessBoundaryNote audience='customer' />
+      </PageSection>
       <LightwellPageHeader
         title='Beacon Intake'
         description='Submit vulnerability findings using the shared JSON / OpenAPI intake contract—without emailing files to your STAM.'
@@ -226,31 +181,20 @@ const UploadPage = () => {
   );
 };
 
-const App = () => {
-  const [role, setRole] = useState<PreviewRole>('customer');
-
-  return (
-    <>
-      <PreviewBanner />
-      <Page sidebar={null}>
-        <RoleToggle role={role} onChange={setRole} />
-        <div className={`${spacing.pxLg} ${spacing.pbSm}`}>
-          <AccessBoundaryNote audience={role === 'stam' ? 'stam' : 'customer'} />
-        </div>
-        <TopNav role={role} />
-        <Routes>
-          <Route path='/' element={<RepositoriesPlaceholder />} />
-          <Route path='/beacon' element={<Beacon />} />
-          <Route
-            path='/beacon/upload'
-            element={role === 'customer' ? <UploadPage /> : <Navigate to='/beacon' replace />}
-          />
-          <Route path='/beacon/incoming' element={<Navigate to='/beacon' replace />} />
-          <Route path='*' element={<Navigate to='/' replace />} />
-        </Routes>
-      </Page>
-    </>
-  );
-};
+const App = () => (
+  <>
+    <PreviewBanner />
+    <Page sidebar={null}>
+      <TopNav />
+      <Routes>
+        <Route path='/' element={<RepositoriesPlaceholder />} />
+        <Route path='/beacon' element={<Beacon />} />
+        <Route path='/beacon/upload' element={<UploadPage />} />
+        <Route path='/beacon/incoming' element={<Navigate to='/beacon' replace />} />
+        <Route path='*' element={<Navigate to='/' replace />} />
+      </Routes>
+    </Page>
+  </>
+);
 
 export default App;
