@@ -36,7 +36,7 @@ describe('BeaconPdfTemplate', () => {
     expect(screen.getByText('By Status')).toBeInTheDocument();
     expect(screen.getByText('Total')).toBeInTheDocument();
     expect(screen.getByText('Critical')).toBeInTheDocument();
-    expect(screen.getByText('No remediation needed')).toBeInTheDocument();
+    expect(screen.getByText('No remediation')).toBeInTheDocument();
     const pipeline = screen.getByLabelText('Vulnerability counts by status');
     expect(pipeline).toHaveClass('beacon-pdf-pipeline');
     expect(pipeline.querySelectorAll('.beacon-pdf-status-card')).toHaveLength(5);

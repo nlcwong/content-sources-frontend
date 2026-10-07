@@ -31,7 +31,7 @@ import UserIcon from '@patternfly/react-icons/dist/esm/icons/user-icon';
 import useDebounce from 'Hooks/useDebounce';
 import { useLightwellRootPath } from '../../../Hooks/Lightwell/navigation/useLightwellRootPath';
 import LightwellPageHeader from '../components/LightwellPageHeader';
-import { CLOSED_STATUSES, SEVERITIES, STATUSES } from './constants';
+import { CLOSED_STATUSES, NO_REMEDIATION_NEEDED_LABEL, SEVERITIES, STATUSES } from './constants';
 import type { Severity, Status } from './types';
 import { CustomerIdSelect } from './components/CustomerIdSelect';
 import { ExportMenu } from './components/ExportMenu';
@@ -424,7 +424,7 @@ const Beacon = () => {
                                 )}
                               </span>
                               <Content component='small' style={{ display: 'block' }}>
-                                No remediation needed
+                                {NO_REMEDIATION_NEEDED_LABEL}
                               </Content>
                             </FlexItem>
                           </Flex>

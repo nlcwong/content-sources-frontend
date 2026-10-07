@@ -146,7 +146,7 @@ it('renders the beacon page with status summary and vulnerability table', async 
   await selectCustomer('CID-01');
 
   expect(screen.getByText('Status Summary')).toBeInTheDocument();
-  expect(screen.getByText('No remediation needed')).toBeInTheDocument();
+  expect(screen.getByText('No remediation')).toBeInTheDocument();
   expect(screen.getByText('LWL-2026-4401')).toBeInTheDocument();
   expect(document.querySelector('.lightwell-filter-panel')).toBeInTheDocument();
   expect(screen.getByText('Customer ID')).toBeInTheDocument();

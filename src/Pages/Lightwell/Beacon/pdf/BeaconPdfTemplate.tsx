@@ -2,7 +2,7 @@ import { Content, Title } from '@patternfly/react-core';
 import { Table, Tbody, Td, Th, Thead, Tr } from '@patternfly/react-table';
 import type { AsyncState } from '@redhat-cloud-services/types';
 
-import { CLOSED_STATUSES, PIPELINE_STATUSES } from '../constants';
+import { CLOSED_STATUSES, NO_REMEDIATION_NEEDED_LABEL, PIPELINE_STATUSES } from '../constants';
 import type { BeaconPdfAdditionalData, BeaconPdfColumn, BeaconPdfData } from './beaconPdf';
 import {
   createDefaultVulnerabilityColumns,
@@ -167,7 +167,7 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
             </div>
             <div className='beacon-pdf-stat'>
               <div className='beacon-pdf-stat-value'>{closedUnremediatedCount}</div>
-              <div className='beacon-pdf-stat-label'>No remediation needed</div>
+              <div className='beacon-pdf-stat-label'>{NO_REMEDIATION_NEEDED_LABEL}</div>
             </div>
           </div>
           <Title headingLevel='h2' size='md'>
