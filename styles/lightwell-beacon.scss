@@ -79,17 +79,6 @@
   padding: 0 var(--pf-t--global--spacer--xs);
 }
 
-.lightwell-closed-statuses {
-  margin-top: var(--pf-t--global--spacer--md);
-  padding: var(--pf-t--global--spacer--sm) 0 0;
-}
-
-.lightwell-closed-statuses-label {
-  display: block;
-  margin-bottom: var(--pf-t--global--spacer--sm);
-  color: var(--pf-t--global--text--color--subtle);
-}
-
 .lightwell-status-cell {
   display: flex;
   flex-direction: column;
@@ -134,6 +123,11 @@
   font-size: 2rem;
   font-weight: var(--pf-t--global--font--weight--heading--bold);
   line-height: 1.2;
+}
+
+.lightwell-stat-label {
+  text-align: center;
+  line-height: 1.25;
 }
 
 .lightwell-help-btn {

@@ -31,11 +31,10 @@ import UserIcon from '@patternfly/react-icons/dist/esm/icons/user-icon';
 import useDebounce from 'Hooks/useDebounce';
 import { useLightwellRootPath } from '../../../Hooks/Lightwell/navigation/useLightwellRootPath';
 import LightwellPageHeader from '../components/LightwellPageHeader';
-import { SEVERITIES, STATUSES } from './constants';
+import { CLOSED_STATUSES, SEVERITIES, STATUSES } from './constants';
 import type { Severity, Status } from './types';
 import { CustomerIdSelect } from './components/CustomerIdSelect';
 import { ExportMenu } from './components/ExportMenu';
-import { ClosedStatusesView } from './components/ClosedStatusesView';
 import { PipelineView } from './components/PipelineView';
 import { VulnerabilityTable } from './components/VulnerabilityTable';
 import { useBeaconData } from './hooks/useBeaconData';
@@ -397,7 +396,7 @@ const Beacon = () => {
                           <Flex
                             justifyContent={{ default: 'justifyContentCenter' }}
                             gap={{ default: 'gapXl' }}
-                            alignItems={{ default: 'alignItemsCenter' }}
+                            alignItems={{ default: 'alignItemsFlexStart' }}
                             style={{ marginBottom: 'var(--pf-t--global--spacer--md)' }}
                           >
                             <FlexItem style={{ textAlign: 'center' }}>
@@ -416,9 +415,20 @@ const Beacon = () => {
                                 Critical
                               </Content>
                             </FlexItem>
+                            <FlexItem style={{ textAlign: 'center' }}>
+                              <span className='lightwell-stat-number'>
+                                {CLOSED_STATUSES.reduce(
+                                  (sum, status) =>
+                                    sum + (displayMeta?.statusCounts?.[status] ?? 0),
+                                  0,
+                                )}
+                              </span>
+                              <Content component='small' style={{ display: 'block' }}>
+                                No remediation needed
+                              </Content>
+                            </FlexItem>
                           </Flex>
                           <PipelineView statusCounts={displayMeta?.statusCounts} />
-                          <ClosedStatusesView statusCounts={displayMeta?.statusCounts} />
                         </CardBody>
                       </Card>
                     </StackItem>

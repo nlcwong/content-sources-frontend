@@ -15,6 +15,14 @@ export const CLOSED_STATUSES: Status[] = [
   'Closed - Obsolete',
 ];
 
+export const NO_REMEDIATION_NEEDED_LABEL = 'No remediation needed';
+
+export function getStatusDisplayLabel(status: Status): string {
+  return (CLOSED_STATUSES as readonly Status[]).includes(status)
+    ? NO_REMEDIATION_NEEDED_LABEL
+    : status;
+}
+
 export const STATUSES: Status[] = [...PIPELINE_STATUSES, ...CLOSED_STATUSES];
 
 export const STATUS_DESCRIPTIONS: Record<Status, string> = {

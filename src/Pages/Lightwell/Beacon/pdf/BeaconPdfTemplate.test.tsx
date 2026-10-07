@@ -36,19 +36,16 @@ describe('BeaconPdfTemplate', () => {
     expect(screen.getByText('By Status')).toBeInTheDocument();
     expect(screen.getByText('Total')).toBeInTheDocument();
     expect(screen.getByText('Critical')).toBeInTheDocument();
+    expect(screen.getByText('No remediation needed')).toBeInTheDocument();
     const pipeline = screen.getByLabelText('Vulnerability counts by status');
     expect(pipeline).toHaveClass('beacon-pdf-pipeline');
     expect(pipeline.querySelectorAll('.beacon-pdf-status-card')).toHaveLength(5);
     expect(pipeline.querySelectorAll('.beacon-pdf-pipeline-arrow')).toHaveLength(4);
     expect(pipeline).toHaveTextContent('Submitted');
     expect(pipeline).toHaveTextContent('Lightwell Network');
-    expect(screen.getByText('Closed without remediation')).toBeInTheDocument();
-    const closed = screen.getByLabelText('Vulnerability counts by closed resolution');
-    expect(closed.querySelectorAll('.beacon-pdf-status-card')).toHaveLength(0);
-    expect(closed.querySelectorAll('.beacon-pdf-stat')).toHaveLength(4);
-    expect(closed.querySelectorAll('.beacon-pdf-pipeline-arrow')).toHaveLength(0);
-    expect(closed).toHaveTextContent("Closed - Won't Do");
-    expect(closed).toHaveTextContent('Closed - Obsolete');
+    expect(
+      screen.queryByLabelText('Vulnerability counts by closed resolution'),
+    ).not.toBeInTheDocument();
     const vulnTable = screen.getByLabelText('Lightwell vulnerabilities');
     expect(vulnTable).not.toHaveClass('pf-m-grid-md', 'pf-m-grid-lg');
     const vulnRow = screen.getByText('LWL-2026-4401').closest('tr');

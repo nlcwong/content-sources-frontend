@@ -31,6 +31,10 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
   const generatedAt = additionalData?.generatedAt;
   const landscape = additionalData?.landscape === true;
   const statusCounts = meta?.statusCounts ?? {};
+  const closedUnremediatedCount = CLOSED_STATUSES.reduce(
+    (sum, status) => sum + (statusCounts[status] ?? 0),
+    0,
+  );
 
   return (
     <div className={`beacon-pdf ${landscape ? 'beacon-pdf--landscape' : 'beacon-pdf--portrait'}`}>
@@ -84,19 +88,6 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
           width: 100%;
           margin: 0 0 4px;
         }
-        .beacon-pdf .beacon-pdf-closed-label {
-          font-size: 11px;
-          color: #6a6e73;
-          margin: 16px 0 8px;
-        }
-        .beacon-pdf .beacon-pdf-closed-statuses {
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          gap: 48px;
-          margin: 0 0 16px;
-        }
-        .beacon-pdf--portrait .beacon-pdf-closed-statuses { gap: 32px; }
         .beacon-pdf .beacon-pdf-pipeline-item {
           display: flex;
           align-items: center;
@@ -174,6 +165,10 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
               </div>
               <div className='beacon-pdf-stat-label'>Critical</div>
             </div>
+            <div className='beacon-pdf-stat'>
+              <div className='beacon-pdf-stat-value'>{closedUnremediatedCount}</div>
+              <div className='beacon-pdf-stat-label'>No remediation needed</div>
+            </div>
           </div>
           <Title headingLevel='h2' size='md'>
             By Status
@@ -194,19 +189,6 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
                     &#9654;
                   </span>
                 ) : null}
-              </div>
-            ))}
-          </div>
-          <div className='beacon-pdf-closed-label'>Closed without remediation</div>
-          <div
-            className='beacon-pdf-closed-statuses'
-            role='list'
-            aria-label='Vulnerability counts by closed resolution'
-          >
-            {CLOSED_STATUSES.map((status) => (
-              <div key={status} className='beacon-pdf-stat' role='listitem'>
-                <div className='beacon-pdf-stat-value'>{statusCounts[status] ?? 0}</div>
-                <div className='beacon-pdf-stat-label'>{status}</div>
               </div>
             ))}
           </div>
