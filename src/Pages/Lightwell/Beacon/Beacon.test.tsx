@@ -36,10 +36,16 @@ jest.mock('services/Lightwell/BeaconQueries', () => ({
   useLtwlsuptTicketIdsQuery: jest.fn(),
 }));
 
+jest.mock('./hooks/useBeaconUpload', () => ({
+  useBeaconUpload: jest.fn(),
+}));
+
 import { useBeaconData } from './hooks/useBeaconData';
+import { useBeaconUpload } from './hooks/useBeaconUpload';
 import { useCustomerIdsQuery } from 'services/Lightwell/CustomerQueries';
 import { useBeaconStatusQuery, useLtwlsuptTicketIdsQuery } from 'services/Lightwell/BeaconQueries';
 import { mockVulnerabilities } from '../mockVulnerabilities';
+import type { BeaconAudience } from './Beacon';
 
 const mockBeaconData = {
   vulnerabilities: mockVulnerabilities,
@@ -55,11 +61,11 @@ const mockBeaconData = {
   },
 };
 
-const renderBeacon = () =>
+const renderBeacon = (audience?: BeaconAudience) =>
   render(
     <ReactQueryTestWrapper>
       <MemoryRouter>
-        <Beacon />
+        <Beacon audience={audience} />
       </MemoryRouter>
     </ReactQueryTestWrapper>,
   );
@@ -91,6 +97,26 @@ beforeEach(() => {
 
   (useBeaconStatusQuery as jest.Mock).mockReturnValue({
     data: '2026-10-02 08:00',
+  });
+
+  (useBeaconUpload as jest.Mock).mockReturnValue({
+    isReceived: false,
+    uploadProps: {
+      step: 'select',
+      pendingFiles: [],
+      structuralErrors: [],
+      processError: undefined,
+      onFilesAccepted: jest.fn(),
+      onReproducerSelected: jest.fn(),
+      onRemovePendingFile: jest.fn(),
+      onRemoveReproducer: jest.fn(),
+      onSubmit: jest.fn(),
+      onRetry: jest.fn(),
+      onStartOver: jest.fn(),
+    },
+    startOver: jest.fn(),
+    submissionIds: undefined,
+    findingCount: undefined,
   });
 });
 
@@ -221,4 +247,34 @@ it('shows loading skeleton while data is fetching', async () => {
   expect(screen.getByText('Beacon')).toBeInTheDocument();
   expect(screen.getByText('Customer ID')).toBeInTheDocument();
   expect(screen.getByText('Filters')).toBeInTheDocument();
+});
+
+it('shows customer intake UI without customer ID select or vulnerability table', async () => {
+  renderBeacon('customer');
+
+  expect(screen.getByRole('button', { name: /Submit Intake/i })).toBeInTheDocument();
+  expect(screen.getByText('My submissions')).toBeInTheDocument();
+  expect(
+    screen.getByText(/Submit vulnerability findings using the shared JSON/),
+  ).toBeInTheDocument();
+
+  expect(screen.queryByRole('button', { name: 'Select customer ID' })).not.toBeInTheDocument();
+  expect(screen.queryByText('Customer ID')).not.toBeInTheDocument();
+  expect(screen.queryByText('Status Summary')).not.toBeInTheDocument();
+  expect(screen.queryByText('Filters')).not.toBeInTheDocument();
+  expect(
+    screen.queryByText(
+      'Select a customer ID first to view the status of their Lightwell submissions.',
+    ),
+  ).not.toBeInTheDocument();
+});
+
+it('shows the upload card when Submit Intake is clicked', async () => {
+  const user = userEvent.setup();
+  renderBeacon('customer');
+
+  await user.click(screen.getByRole('button', { name: /Submit Intake/i }));
+
+  expect(screen.getByText(/Drag and drop findings JSON file/i)).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Submit Intake/i })).not.toBeInTheDocument();
 });

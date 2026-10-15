@@ -40,6 +40,7 @@ import { ExportMenu } from './components/ExportMenu';
 import IncomingUploadsPanel from './components/IncomingUploadsPanel';
 import { PipelineView } from './components/PipelineView';
 import { VulnerabilityTable } from './components/VulnerabilityTable';
+import BeaconCustomerIntake from './BeaconCustomerIntake';
 import { useBeaconData } from './hooks/useBeaconData';
 import {
   type BeaconVulnerabilityFilters,
@@ -53,6 +54,13 @@ import {
 } from './utils/vulnerabilityTableColumns';
 
 import '../../../../styles/lightwell-beacon.scss';
+
+export type BeaconAudience = 'customer' | 'stam';
+
+type BeaconProps = {
+  /** Preview / wireframe persona. Production always uses the STAM default. */
+  audience?: BeaconAudience;
+};
 
 const DEFAULT_PER_PAGE = 20;
 
@@ -83,20 +91,7 @@ function buildBeaconFilters(
 
 const DROP_LAST_CHROME_SEGMENT_OPTIONS = { dropLastChromeSegment: true };
 
-const Beacon = () => {
-  const rootPath = useLightwellRootPath();
-  const appBreadcrumbsEnabled = useFlag('platform.chrome.app-breadcrumbs');
-  const breadcrumbs = useMemo(
-    () => [{ pathname: `${rootPath}/beacon`, title: 'Lightwell Beacon' }],
-    [rootPath],
-  );
-
-  useRemoteHook({
-    scope: 'chrome',
-    module: './breadcrumbs/useReplaceBreadcrumbs',
-    args: appBreadcrumbsEnabled ? [breadcrumbs, DROP_LAST_CHROME_SEGMENT_OPTIONS] : [[]],
-  });
-
+const BeaconStamView = () => {
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>();
   const [selectedSeverities, setSelectedSeverities] = useState<Set<Severity>>(new Set());
   const [selectedStatuses, setSelectedStatuses] = useState<Set<Status>>(new Set());
@@ -478,6 +473,27 @@ const Beacon = () => {
       </PageSection>
     </>
   );
+};
+
+const Beacon = ({ audience = 'stam' }: BeaconProps) => {
+  const rootPath = useLightwellRootPath();
+  const appBreadcrumbsEnabled = useFlag('platform.chrome.app-breadcrumbs');
+  const breadcrumbs = useMemo(
+    () => [{ pathname: `${rootPath}/beacon`, title: 'Lightwell Beacon' }],
+    [rootPath],
+  );
+
+  useRemoteHook({
+    scope: 'chrome',
+    module: './breadcrumbs/useReplaceBreadcrumbs',
+    args: appBreadcrumbsEnabled ? [breadcrumbs, DROP_LAST_CHROME_SEGMENT_OPTIONS] : [[]],
+  });
+
+  if (audience === 'customer') {
+    return <BeaconCustomerIntake />;
+  }
+
+  return <BeaconStamView />;
 };
 
 export default Beacon;

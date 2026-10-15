@@ -15,7 +15,7 @@ type NavItem = {
 };
 
 /**
- * In-app Lightwell top navigation for the LWLP-1269 Beacon upload prototype.
+ * In-app Lightwell top navigation for the LWLP-1269 Beacon prototype.
  * Chrome sidebar nav is out of scope for this repo.
  */
 const LightwellTopNav = () => {
@@ -52,15 +52,8 @@ const LightwellTopNav = () => {
       key: 'beacon',
       label: 'Beacon',
       visible: beaconEnabled,
-      isActive: (path) => path.includes('/beacon') && !path.includes('/beacon/upload'),
+      isActive: (path) => path.includes('/beacon'),
       onClick: () => navigateTo('beacon'),
-    },
-    {
-      key: 'beaconUpload',
-      label: 'Beacon Intake',
-      visible: beaconEnabled,
-      isActive: (path) => path.includes('/beacon/upload'),
-      onClick: () => navigateTo('beaconUpload'),
     },
   ];
 
