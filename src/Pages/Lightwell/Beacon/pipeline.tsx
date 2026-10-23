@@ -4,6 +4,7 @@ import BundleIcon from '@patternfly/react-icons/dist/esm/icons/bundle-icon';
 import CheckCircleIcon from '@patternfly/react-icons/dist/esm/icons/check-circle-icon';
 import OutlinedHourglassIcon from '@patternfly/react-icons/dist/esm/icons/outlined-hourglass-icon';
 import RhUiInProgressIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-in-progress-icon';
+import RhUiPauseCircleIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-pause-circle-icon';
 import RhUiPendingIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-pending-icon';
 
 import type { LwMetricsStep } from 'kit/components/assemblies';
@@ -22,6 +23,7 @@ type PipelineStepPresentation = {
 /** Same icon and step color the Beacon page passes to `LwMetricsStepper`. */
 export const PIPELINE_STEP_PRESENTATION: Record<PipelineStatus, PipelineStepPresentation> = {
   Submitted: { color: 'blue', icon: <RhUiPendingIcon /> },
+  'On Hold': { color: 'partial', icon: <RhUiPauseCircleIcon /> },
   Classified: { color: 'exact', icon: <CheckCircleIcon /> },
   'Fix in Progress': { color: 'orange', icon: <RhUiInProgressIcon /> },
   Validation: { color: 'purple', icon: <OutlinedHourglassIcon /> },

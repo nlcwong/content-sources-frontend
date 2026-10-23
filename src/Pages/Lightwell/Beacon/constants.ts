@@ -2,6 +2,7 @@ import type { Severity, Status } from './types';
 
 export const STATUSES: Status[] = [
   'Submitted',
+  'On Hold',
   'Classified',
   'Fix in Progress',
   'Validation',
@@ -19,6 +20,7 @@ export function statusLabel(status: Status): string {
 
 export const STATUS_DESCRIPTIONS: Record<Status, string> = {
   Submitted: 'Vulnerability submitted, undergoing initial review to identify a fix target.',
+  'On Hold': 'Remediation is intended but stalled or blocked.',
   Classified: 'Fix target identified.',
   'Fix in Progress': 'A fix is currently under development.',
   Validation: 'The fix is being validated within the Red Hat pipeline.',

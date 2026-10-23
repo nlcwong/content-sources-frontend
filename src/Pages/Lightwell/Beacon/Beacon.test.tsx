@@ -121,7 +121,7 @@ it('shows an empty state until a customer is selected', async () => {
     ).toBeInTheDocument();
   });
 
-  expect(screen.queryByText('Status Summary')).not.toBeInTheDocument();
+  expect(screen.queryByText('Vulnerability Summary')).not.toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Select customer ID' })).toBeInTheDocument();
 });
 
@@ -134,7 +134,7 @@ it('preselects the customer when only one is available', async () => {
   renderBeacon();
 
   await waitFor(() => {
-    expect(screen.getByText('Status Summary')).toBeInTheDocument();
+    expect(screen.getByText('Vulnerability Summary')).toBeInTheDocument();
   });
 
   expect(screen.getByRole('button', { name: 'CID-01' })).toBeInTheDocument();
@@ -145,7 +145,7 @@ it('renders the beacon page with status summary and vulnerability table', async 
   renderBeacon();
   await selectCustomer('CID-01');
 
-  expect(screen.getByText('Status Summary')).toBeInTheDocument();
+  expect(screen.getByText('Vulnerability Summary')).toBeInTheDocument();
   expect(screen.getAllByText('No remediation')).toHaveLength(2);
   expect(screen.getByText('LWL-2026-4401')).toBeInTheDocument();
   expect(document.querySelector('.lightwell-filter-panel')).toBeInTheDocument();
@@ -213,7 +213,7 @@ it('keeps the status summary card header while metrics are loading', async () =>
   renderBeacon();
 
   await waitFor(() => {
-    expect(screen.getByText('Status Summary')).toBeInTheDocument();
+    expect(screen.getByText('Vulnerability Summary')).toBeInTheDocument();
   });
 
   expect(document.querySelector('.lw-c-metrics-card')).toBeInTheDocument();

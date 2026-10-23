@@ -318,7 +318,7 @@ const Beacon = () => {
           ) : selectedCustomerId ? (
             <PageChromeSlot>
               <LwMetricsCard
-                hasHeader={`Status Summary${activeFilterCount > 0 ? ' (filtered)' : ''}`}
+                hasHeader={`Vulnerability Summary${activeFilterCount > 0 ? ' (filtered)' : ''}`}
                 hasAction={
                   <LwPopover
                     hasHeader='SLA Policy'
@@ -377,30 +377,17 @@ const Beacon = () => {
                         <LwSkeleton fontSize='3xl' width='4ch' />
                         <LwSkeleton fontSize='sm' width='5ch' />
                       </Flex>
-                      <Flex
-                        direction={{ default: 'column' }}
-                        gap={{ default: 'gapSm' }}
-                        alignItems={{ default: 'alignItemsCenter' }}
-                      >
-                        <LwSkeleton fontSize='3xl' width='4ch' />
-                        <LwSkeleton fontSize='sm' width='5ch' />
-                      </Flex>
                     </LwMetricsCountSlots>
                   }
                 >
                   <LwMetricsCountSlots>
                     <LwMetricsCount
-                      value={displayMeta?.count ?? filteredVulns.length}
-                      label='Total'
-                    />
-                    <LwMetricsCount
-                      value={displayMeta?.criticalCount ?? 0}
-                      label='Critical'
-                      color='red'
-                    />
-                    <LwMetricsCount
                       value={displayMeta?.statusCounts?.[UNREMEDIATED_STATUS] ?? 0}
                       label={NO_REMEDIATION_LABEL}
+                    />
+                    <LwMetricsCount
+                      value={displayMeta?.count ?? filteredVulns.length}
+                      label='Total'
                     />
                   </LwMetricsCountSlots>
                 </LwLoaded>

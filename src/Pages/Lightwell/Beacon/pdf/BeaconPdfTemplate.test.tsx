@@ -37,27 +37,20 @@ describe('BeaconPdfTemplate', () => {
     expect(document.querySelector('.beacon-pdf--portrait')).toBeInTheDocument();
     expect(screen.queryByText(/Customer ID:/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Generated:/)).not.toBeInTheDocument();
-    const summary = screen.getByText('Status Summary');
+    const summary = screen.getByText('Vulnerability Summary');
     const pipeline = screen.getByLabelText('Submission pipeline metrics');
     expect(
       summary.compareDocumentPosition(pipeline) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(screen.getByText('Total')).toBeInTheDocument();
-    expect(screen.getByText('Critical')).toBeInTheDocument();
+    expect(screen.queryByText('Critical')).not.toBeInTheDocument();
     expect(screen.getByText('No remediation')).toBeInTheDocument();
-    expect(
-      screen
-        .getByText('Critical')
-        .closest('.beacon-pdf-stat')
-        ?.querySelector('.beacon-pdf-stat-bar'),
-    ).toHaveStyle({
-      backgroundColor: '#731f00',
-    });
     expect(pipeline).toHaveClass('beacon-pdf-pipeline');
-    expect(pipeline.querySelectorAll('.beacon-pdf-step')).toHaveLength(5);
-    expect(pipeline.querySelectorAll('.beacon-pdf-step-icon')).toHaveLength(5);
-    expect(pipeline.querySelectorAll('.beacon-pdf-step-connector')).toHaveLength(4);
+    expect(pipeline.querySelectorAll('.beacon-pdf-step')).toHaveLength(6);
+    expect(pipeline.querySelectorAll('.beacon-pdf-step-icon')).toHaveLength(6);
+    expect(pipeline.querySelectorAll('.beacon-pdf-step-connector')).toHaveLength(5);
     expect(pipeline).toHaveTextContent('Submitted');
+    expect(pipeline).toHaveTextContent('On Hold');
     expect(pipeline).toHaveTextContent('Lightwell Network');
     expect(pipeline).not.toHaveTextContent('No remediation');
     const vulnTable = screen.getByLabelText('Lightwell vulnerabilities');
@@ -96,7 +89,7 @@ describe('BeaconPdfTemplate', () => {
       />,
     );
 
-    expect(screen.getByText('Status Summary (filtered)')).toBeInTheDocument();
+    expect(screen.getByText('Vulnerability Summary (filtered)')).toBeInTheDocument();
     expect(screen.queryByText(/Last updated:/)).not.toBeInTheDocument();
 
     const noRemediationStat = screen
@@ -129,7 +122,7 @@ describe('BeaconPdfTemplate', () => {
     );
 
     expect(screen.queryByRole('heading', { name: 'Beacon' })).not.toBeInTheDocument();
-    expect(screen.queryByText('Status Summary')).not.toBeInTheDocument();
+    expect(screen.queryByText('Vulnerability Summary')).not.toBeInTheDocument();
     expect(document.querySelector('.beacon-pdf--landscape')).toBeInTheDocument();
     expect(screen.getByText('Vulnerabilities (continued)')).toBeInTheDocument();
     expect(screen.getByText('LWL-2026-4401')).toBeInTheDocument();

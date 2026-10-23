@@ -2,6 +2,7 @@ export type Severity = 'Critical' | 'Important' | 'Moderate' | 'Minor';
 
 export type Status =
   | 'Submitted'
+  | 'On Hold'
   | 'Classified'
   | 'Fix in Progress'
   | 'Validation'

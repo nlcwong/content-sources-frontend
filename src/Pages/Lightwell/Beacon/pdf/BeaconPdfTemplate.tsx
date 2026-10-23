@@ -6,7 +6,7 @@ import { t_global_border_color_nonstatus_green_default } from '@patternfly/react
 import { t_global_border_color_nonstatus_orange_default } from '@patternfly/react-tokens/dist/esm/t_global_border_color_nonstatus_orange_default';
 import { t_global_border_color_nonstatus_purple_default } from '@patternfly/react-tokens/dist/esm/t_global_border_color_nonstatus_purple_default';
 import { t_global_border_color_nonstatus_teal_default } from '@patternfly/react-tokens/dist/esm/t_global_border_color_nonstatus_teal_default';
-import { t_global_color_status_danger_default } from '@patternfly/react-tokens/dist/esm/t_global_color_status_danger_default';
+import { t_global_border_color_nonstatus_yellow_default } from '@patternfly/react-tokens/dist/esm/t_global_border_color_nonstatus_yellow_default';
 
 import type { LwStepIconColorKey } from 'kit/lightwell.config';
 
@@ -23,10 +23,10 @@ import {
 const PDF_STEP_FILL: Partial<Record<LwStepIconColorKey, string>> = {
   blue: t_global_border_color_nonstatus_blue_default.value,
   exact: t_global_border_color_nonstatus_green_default.value,
+  partial: t_global_border_color_nonstatus_yellow_default.value,
   orange: t_global_border_color_nonstatus_orange_default.value,
   purple: t_global_border_color_nonstatus_purple_default.value,
   teal: t_global_border_color_nonstatus_teal_default.value,
-  red: t_global_color_status_danger_default.value,
 };
 
 const DEFAULT_COUNT_FILL = PDF_STEP_FILL.blue ?? '#004d99';
@@ -52,19 +52,13 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
   const isFiltered = additionalData?.isFiltered === true;
   const lastUpdated = additionalData?.lastUpdated;
   const statusCounts = meta?.statusCounts ?? {};
-  // LwMetricsCount paints a blue bar when `color` is omitted. Critical overrides to red.
   const summaryMetrics = [
-    { label: 'Total', value: meta?.count ?? vulnerabilities.length, fill: DEFAULT_COUNT_FILL },
-    {
-      label: 'Critical',
-      value: meta?.criticalCount ?? 0,
-      fill: PDF_STEP_FILL.red ?? DEFAULT_COUNT_FILL,
-    },
     {
       label: NO_REMEDIATION_LABEL,
       value: statusCounts[UNREMEDIATED_STATUS] ?? 0,
       fill: DEFAULT_COUNT_FILL,
     },
+    { label: 'Total', value: meta?.count ?? vulnerabilities.length, fill: DEFAULT_COUNT_FILL },
   ];
 
   return (
@@ -232,7 +226,7 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
           </div>
           <div className='beacon-pdf-summary'>
             <div className='beacon-pdf-summary-title'>
-              {`Status Summary${isFiltered ? ' (filtered)' : ''}`}
+              {`Vulnerability Summary${isFiltered ? ' (filtered)' : ''}`}
             </div>
             <div className='beacon-pdf-stats'>
               {summaryMetrics.map((metric) => (
