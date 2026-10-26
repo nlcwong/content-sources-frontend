@@ -30,9 +30,9 @@ describe('Beacon summary donut model', () => {
       { x: IN_PIPELINE_LABEL, y: 13 },
     ]);
     expect(model.legendData.map((item) => item.name)).toEqual([
-      `${ON_HOLD_LABEL} 3`,
-      `${NO_REMEDIATION_LABEL} 7`,
-      `${IN_PIPELINE_LABEL} 13`,
+      `${ON_HOLD_LABEL}: 3`,
+      `${NO_REMEDIATION_LABEL}: 7`,
+      `${IN_PIPELINE_LABEL}: 13`,
     ]);
   });
 
@@ -50,9 +50,9 @@ describe('Beacon summary donut model', () => {
 
     expect(model.data.every((slice) => slice.y === 0)).toBe(true);
     expect(model.legendData.map((item) => item.name)).toEqual([
-      `${ON_HOLD_LABEL} 0`,
-      `${NO_REMEDIATION_LABEL} 0`,
-      `${IN_PIPELINE_LABEL} 0`,
+      `${ON_HOLD_LABEL}: 0`,
+      `${NO_REMEDIATION_LABEL}: 0`,
+      `${IN_PIPELINE_LABEL}: 0`,
     ]);
     expect(getInPipelineCount(undefined)).toBe(0);
   });

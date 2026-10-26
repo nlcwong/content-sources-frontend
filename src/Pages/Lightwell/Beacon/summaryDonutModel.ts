@@ -45,7 +45,7 @@ export const getBeaconSummaryDonutModel = (
   return {
     data,
     colorScale,
-    legendData: data.map(({ x, y }) => ({ name: `${x} ${y}` })),
+    legendData: data.map(({ x, y }) => ({ name: `${x}: ${y}` })),
     getLabel: ({ datum }) => `${datum.x}: ${datum.y}`,
   };
 };

@@ -27,7 +27,6 @@ import { useLightwellRootPath } from '../../../Hooks/Lightwell/navigation/useLig
 import {
   LwButtonGroup,
   LwLoaded,
-  LwMetricsCard,
   LwMetricsDonutChart,
   LwMetricsStepper,
   LwPageHeader,
@@ -68,7 +67,7 @@ import {
 import '../../../../styles/lightwell-beacon.scss';
 
 const DEFAULT_PER_PAGE = 20;
-const SUMMARY_DONUT_DEFAULT_WIDTH = 280;
+const SUMMARY_DONUT_DEFAULT_WIDTH = 220;
 
 const slaHelpPopover = (
   <LwPopover
@@ -366,7 +365,7 @@ const Beacon = () => {
             </PageChromeSlot>
           ) : selectedCustomerId ? (
             <PageChromeSlot>
-              <LwMetricsCard>
+              <div className='lightwell-beacon-summary'>
                 <LwLoaded
                   isLoaded={!isLoading}
                   fallback={
@@ -380,10 +379,6 @@ const Beacon = () => {
                   <LwMetricsDonutChart
                     data={summaryDonut.data}
                     colorScale={summaryDonut.colorScale}
-                    legendData={summaryDonut.legendData}
-                    legendPosition='bottom'
-                    legendOrientation='horizontal'
-                    legendAllowWrap
                     getLabel={summaryDonut.getLabel}
                     width={summaryDonutWidth}
                     height={summaryDonutHeight}
@@ -392,8 +387,22 @@ const Beacon = () => {
                     ariaDesc='Vulnerability summary donut chart'
                     containerRef={summaryDonutContainerRef}
                   />
+                  <ul className='lightwell-beacon-summary-legend' aria-label='Vulnerability status summary'>
+                    {summaryDonut.data.map((slice, index) => (
+                      <li key={slice.x} className='lightwell-beacon-summary-legend__item'>
+                        <span
+                          className='lightwell-beacon-summary-legend__swatch'
+                          style={{ background: summaryDonut.colorScale[index] }}
+                          aria-hidden
+                        />
+                        <span className='lightwell-beacon-summary-legend__label'>
+                          {slice.x}: {slice.y}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
                 </LwLoaded>
-              </LwMetricsCard>
+              </div>
             </PageChromeSlot>
           ) : null}
         </PageChromeSlots>
