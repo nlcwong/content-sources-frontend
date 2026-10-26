@@ -10,7 +10,12 @@ import { t_global_border_color_nonstatus_yellow_default } from '@patternfly/reac
 
 import type { LwStepIconColorKey } from 'kit/lightwell.config';
 
-import { NO_REMEDIATION_LABEL, STATUSES, statusLabel, UNREMEDIATED_STATUS } from '../constants';
+import {
+  NO_REMEDIATION_LABEL,
+  PIPELINE_STEPPER_STATUSES,
+  statusLabel,
+  UNREMEDIATED_STATUS,
+} from '../constants';
 import { getPipelineStepPresentation } from '../pipeline';
 import type { BeaconPdfAdditionalData, BeaconPdfColumn, BeaconPdfData } from './beaconPdf';
 import {
@@ -243,7 +248,7 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
             </div>
           </div>
           <div className='beacon-pdf-pipeline' role='list' aria-label='Submission pipeline metrics'>
-            {STATUSES.map((status, index) => {
+            {PIPELINE_STEPPER_STATUSES.map((status, index) => {
               const presentation = getPipelineStepPresentation(status);
               const fill =
                 (presentation && PDF_STEP_FILL[presentation.color]) || DEFAULT_COUNT_FILL;
@@ -254,7 +259,7 @@ const BeaconPdfTemplate = ({ asyncData, additionalData }: BeaconPdfTemplateProps
                     <span className='beacon-pdf-step-icon' style={{ backgroundColor: fill }}>
                       {presentation?.icon}
                     </span>
-                    {index < STATUSES.length - 1 ? (
+                    {index < PIPELINE_STEPPER_STATUSES.length - 1 ? (
                       <span className='beacon-pdf-step-connector' aria-hidden='true' />
                     ) : null}
                   </div>

@@ -1,6 +1,6 @@
 # LwMetricsDonutChart
 
-> **Status:** implementing · Unit roadmap: [`ROADMAP.md`](./ROADMAP.md) · Family: [`../ROADMAP.md`](../ROADMAP.md)
+> **Status:** live · Unit roadmap: [`ROADMAP.md`](./ROADMAP.md) · Family: [`../ROADMAP.md`](../ROADMAP.md)
 
 ## Why it exists
 
@@ -10,13 +10,18 @@ future products) pass series + title; chromatic defaults come from
 
 ## What it can do
 
-| Capability              | Notes                                                 |
-| ----------------------- | ----------------------------------------------------- |
-| Series                  | `{ x, y }[]`                                          |
-| Center title / subtitle | PF ChartDonut                                         |
-| Color scale             | Default match-status order; override via `colorScale` |
-| Tooltips                | Optional `getLabel`                                   |
-| Responsive host         | Optional `containerRef` for call-site resize observer |
+| Capability              | Notes                                                                 |
+| ----------------------- | --------------------------------------------------------------------- |
+| Series                  | `{ x, y }[]`                                                          |
+| Center title / subtitle | PF ChartDonut                                                         |
+| Color scale             | Default match-status order; override via `colorScale`                 |
+| Tooltips                | Optional `getLabel`                                                   |
+| Legend                  | PF `legendData` / `legendPosition` / `legendOrientation` passthrough  |
+| Legend wrap             | Prefer `legendAllowWrap` callback so call sites grow chart `height`   |
+| Responsive host         | Optional `containerRef` for call-site resize observer                 |
+
+Call sites own series builders, `legendData`, and resize measurement. Kit does
+not own product slice catalogs.
 
 ## Related
 

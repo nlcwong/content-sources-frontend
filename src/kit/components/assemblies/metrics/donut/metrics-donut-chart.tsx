@@ -15,7 +15,17 @@ export type LwMetricsDonutDatum = {
   y: number;
 };
 
+export type LwMetricsDonutLegendDatum = {
+  name?: string;
+  symbol?: {
+    fill?: string;
+    type?: string;
+  };
+};
+
 const DEFAULT_PADDING = { bottom: 10, left: 10, right: 10, top: 10 };
+/** Room for PF bottom legend under the ring; call site still grows height on wrap. */
+const BOTTOM_LEGEND_PADDING = { bottom: 60, left: 10, right: 10, top: 10 };
 const DEFAULT_TITLE_LINE_HEIGHT = 1.6;
 // PF draws a 9px band when innerRadius is omitted. This share of the outer radius is the ring.
 const RING_THICKNESS_RATIO = 0.14;
@@ -61,6 +71,10 @@ export type LwMetricsDonutChartProps = {
   ariaDesc?: string;
   allowTooltip?: boolean;
   getLabel?: (args: { datum: LwMetricsDonutDatum }) => string;
+  legendData?: LwMetricsDonutLegendDatum[];
+  legendPosition?: 'bottom' | 'right';
+  legendOrientation?: 'horizontal' | 'vertical';
+  legendAllowWrap?: boolean | ((extraHeight: number) => void);
   containerRef?: Ref<HTMLDivElement>;
   padding?: { bottom?: number; left?: number; right?: number; top?: number };
   className?: string;
@@ -68,7 +82,7 @@ export type LwMetricsDonutChartProps = {
 
 /**
  * Kit **assembly** — PF `ChartDonut` harness for match / utilization metrics.
- * Call site owns series builders and resize measurement.
+ * Call site owns series builders, legend data, and resize measurement.
  */
 export function LwMetricsDonutChart({
   data,
@@ -80,10 +94,19 @@ export function LwMetricsDonutChart({
   ariaDesc = 'Donut chart',
   allowTooltip = true,
   getLabel,
+  legendData,
+  legendPosition,
+  legendOrientation,
+  legendAllowWrap,
   containerRef,
-  padding = DEFAULT_PADDING,
+  padding,
   className,
 }: LwMetricsDonutChartProps) {
+  const resolvedLegendPosition = legendData ? (legendPosition ?? 'bottom') : legendPosition;
+  const resolvedPadding =
+    padding ??
+    (resolvedLegendPosition === 'bottom' && legendData ? BOTTOM_LEGEND_PADDING : DEFAULT_PADDING);
+
   const chart = (
     <ChartDonut
       ariaDesc={ariaDesc}
@@ -97,10 +120,14 @@ export function LwMetricsDonutChart({
       titleComponent={
         <ChartLabel lineHeight={DEFAULT_TITLE_LINE_HEIGHT} style={DEFAULT_TITLE_STYLE} />
       }
+      legendData={legendData}
+      legendPosition={resolvedLegendPosition}
+      legendOrientation={legendOrientation}
+      legendAllowWrap={legendAllowWrap}
       width={width}
       height={height}
-      padding={padding}
-      innerRadius={getInnerRadius(width, height, padding)}
+      padding={resolvedPadding}
+      innerRadius={getInnerRadius(width, height, resolvedPadding)}
     />
   );
 

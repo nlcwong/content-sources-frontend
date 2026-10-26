@@ -46,11 +46,11 @@ describe('BeaconPdfTemplate', () => {
     expect(screen.queryByText('Critical')).not.toBeInTheDocument();
     expect(screen.getByText('No remediation')).toBeInTheDocument();
     expect(pipeline).toHaveClass('beacon-pdf-pipeline');
-    expect(pipeline.querySelectorAll('.beacon-pdf-step')).toHaveLength(6);
-    expect(pipeline.querySelectorAll('.beacon-pdf-step-icon')).toHaveLength(6);
-    expect(pipeline.querySelectorAll('.beacon-pdf-step-connector')).toHaveLength(5);
+    expect(pipeline.querySelectorAll('.beacon-pdf-step')).toHaveLength(5);
+    expect(pipeline.querySelectorAll('.beacon-pdf-step-icon')).toHaveLength(5);
+    expect(pipeline.querySelectorAll('.beacon-pdf-step-connector')).toHaveLength(4);
     expect(pipeline).toHaveTextContent('Submitted');
-    expect(pipeline).toHaveTextContent('On Hold');
+    expect(pipeline).not.toHaveTextContent('On Hold');
     expect(pipeline).toHaveTextContent('Lightwell Network');
     expect(pipeline).not.toHaveTextContent('No remediation');
     const vulnTable = screen.getByLabelText('Lightwell vulnerabilities');

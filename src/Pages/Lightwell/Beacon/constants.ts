@@ -9,6 +9,11 @@ export const STATUSES: Status[] = [
   'Lightwell Network',
 ];
 
+/** Pipeline stepper / PDF strip — On Hold is tracked separately (filters + summary donut). */
+export const PIPELINE_STEPPER_STATUSES: Status[] = STATUSES.filter(
+  (status) => status !== 'On Hold',
+);
+
 export const UNREMEDIATED_STATUS: Status = 'Unremediated';
 export const NO_REMEDIATION_LABEL = 'No remediation';
 

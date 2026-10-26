@@ -121,7 +121,8 @@ it('shows an empty state until a customer is selected', async () => {
     ).toBeInTheDocument();
   });
 
-  expect(screen.queryByText('Vulnerability Summary')).not.toBeInTheDocument();
+  expect(document.querySelector('.lw-c-metrics-card')).not.toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'SLA help' })).toBeInTheDocument();
   expect(screen.getByRole('button', { name: 'Select customer ID' })).toBeInTheDocument();
 });
 
@@ -134,7 +135,7 @@ it('preselects the customer when only one is available', async () => {
   renderBeacon();
 
   await waitFor(() => {
-    expect(screen.getByText('Vulnerability Summary')).toBeInTheDocument();
+    expect(document.querySelector('.lw-c-metrics-donut-chart')).toBeInTheDocument();
   });
 
   expect(screen.getByRole('button', { name: 'CID-01' })).toBeInTheDocument();
@@ -145,8 +146,19 @@ it('renders the beacon page with status summary and vulnerability table', async 
   renderBeacon();
   await selectCustomer('CID-01');
 
-  expect(screen.getByText('Vulnerability Summary')).toBeInTheDocument();
-  expect(screen.getAllByText('No remediation')).toHaveLength(2);
+  expect(screen.getByRole('button', { name: 'SLA help' })).toBeInTheDocument();
+  expect(screen.queryByText('Vulnerability Summary')).not.toBeInTheDocument();
+  const summaryDonut = document.querySelector('.lw-c-metrics-donut-chart');
+  expect(summaryDonut).toBeInTheDocument();
+  expect(
+    within(summaryDonut as HTMLElement).getByText(String(mockBeaconData.meta.count)),
+  ).toBeInTheDocument();
+  expect(within(summaryDonut as HTMLElement).getByText('Total')).toBeInTheDocument();
+  expect(within(summaryDonut as HTMLElement).getByText(/^On Hold 0$/)).toBeInTheDocument();
+  expect(within(summaryDonut as HTMLElement).getByText(/^In Pipeline \d+$/)).toBeInTheDocument();
+  expect(within(summaryDonut as HTMLElement).getByText(/^No remediation 0$/)).toBeInTheDocument();
+  const pipeline = screen.getByLabelText('Submission pipeline metrics');
+  expect(within(pipeline).queryByText('On Hold')).not.toBeInTheDocument();
   expect(screen.getByText('LWL-2026-4401')).toBeInTheDocument();
   expect(document.querySelector('.lightwell-filter-panel')).toBeInTheDocument();
   expect(screen.getByText('Customer ID')).toBeInTheDocument();
@@ -198,7 +210,7 @@ it('clears the ticket filter when the customer changes and keeps other filters',
   ).toBe(true);
 });
 
-it('keeps the status summary card header while metrics are loading', async () => {
+it('keeps the status summary card while metrics are loading', async () => {
   (useCustomerIdsQuery as jest.Mock).mockReturnValue({
     isLoading: false,
     data: ['CID-01'],
@@ -213,14 +225,14 @@ it('keeps the status summary card header while metrics are loading', async () =>
   renderBeacon();
 
   await waitFor(() => {
-    expect(screen.getByText('Vulnerability Summary')).toBeInTheDocument();
+    expect(document.querySelector('.lw-c-metrics-card')).toBeInTheDocument();
   });
 
-  expect(document.querySelector('.lw-c-metrics-card')).toBeInTheDocument();
+  expect(screen.getByRole('button', { name: 'SLA help' })).toBeInTheDocument();
   expect(document.querySelector('.lw-c-loaded.lw-m-loading')).toBeInTheDocument();
   expect(document.querySelectorAll('.pf-v6-c-skeleton').length).toBeGreaterThan(0);
-  expect(document.querySelector('.pf-m-text-3xl')).toBeInTheDocument();
   expect(screen.queryByText('Total')).not.toBeInTheDocument();
+  expect(document.querySelector('.lw-c-metrics-donut-chart')).not.toBeInTheDocument();
   expect(screen.getByText('Beacon')).toBeInTheDocument();
   expect(screen.getByText('Customer ID')).toBeInTheDocument();
   expect(screen.getByText('Filters')).toBeInTheDocument();

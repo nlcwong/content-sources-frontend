@@ -10,7 +10,7 @@ import RhUiPendingIcon from '@patternfly/react-icons/dist/esm/icons/rh-ui-pendin
 import type { LwMetricsStep } from 'kit/components/assemblies';
 import type { LwStepIconColorKey } from 'kit/lightwell.config';
 
-import { STATUSES, STATUS_DESCRIPTIONS } from './constants';
+import { PIPELINE_STEPPER_STATUSES, STATUS_DESCRIPTIONS } from './constants';
 import type { Status } from './types';
 
 type PipelineStatus = Exclude<Status, 'Upstreaming' | 'Published' | 'Unremediated'>;
@@ -38,7 +38,7 @@ export function buildPipelineMetricSteps(
   statusCounts: Record<string, number> | undefined,
   isHydrated: boolean,
 ): LwMetricsStep[] {
-  return STATUSES.map((status) => {
+  return PIPELINE_STEPPER_STATUSES.map((status) => {
     const count = statusCounts?.[status] ?? 0;
     const presentation = PIPELINE_STEP_PRESENTATION[status as PipelineStatus];
 

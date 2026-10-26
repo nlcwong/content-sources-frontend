@@ -28,8 +28,7 @@ import {
   LwButtonGroup,
   LwLoaded,
   LwMetricsCard,
-  LwMetricsCount,
-  LwMetricsCountSlots,
+  LwMetricsDonutChart,
   LwMetricsStepper,
   LwPageHeader,
   PageChromeSlot,
@@ -37,20 +36,24 @@ import {
   PageChromeSlots,
   PageTitleStack,
 } from 'kit/components/assemblies';
-import { LwButton, LwEmptyState, LwMenu, LwPopover, LwSkeleton } from 'kit/components/primitives';
-
 import {
-  FILTER_STATUSES,
-  NO_REMEDIATION_LABEL,
-  SEVERITIES,
-  statusLabel,
-  UNREMEDIATED_STATUS,
-} from './constants';
+  LwButton,
+  LwEmptyState,
+  LwMenu,
+  LwPopover,
+  LwSkeleton,
+  LwTitle,
+} from 'kit/components/primitives';
+
+import { FILTER_STATUSES, SEVERITIES, statusLabel } from './constants';
 import { buildPipelineMetricSteps } from './pipeline';
+import { getBeaconSummaryDonutModel } from './summaryDonutModel';
 import type { Severity, Status } from './types';
 import { ExportMenu } from './components/ExportMenu';
 import { VulnerabilityTable } from './components/VulnerabilityTable';
 import { useBeaconData } from './hooks/useBeaconData';
+import { getMatchDonutChartHeight } from '../Lens/charts/matchDonutModel';
+import { useContainerWidth } from '../hooks/useContainerWidth';
 import {
   type BeaconVulnerabilityFilters,
   type BeaconVulnerabilityFlag,
@@ -65,6 +68,41 @@ import {
 import '../../../../styles/lightwell-beacon.scss';
 
 const DEFAULT_PER_PAGE = 20;
+const SUMMARY_DONUT_DEFAULT_WIDTH = 280;
+
+const slaHelpPopover = (
+  <LwPopover
+    hasHeader='SLA Policy'
+    hasBody={
+      <Content>
+        <p>
+          <strong>Submit</strong> vulnerabilities to the clearinghouse at any time.
+        </p>
+        <p>
+          <strong>Triage within 48 hours.</strong>
+        </p>
+        <p>
+          <strong>Priority is yours.</strong> Your severity sets the default order. Adjust at any
+          time.
+        </p>
+        <p>
+          A fix is complete when a patched artifact is published in the repository (or when it gets
+          to the Lightwell Network).
+        </p>
+        <br />
+        <p>
+          SLA applies to up to 25 findings per member per week. All other findings are worked
+          continuously on a best-effort basis.
+        </p>
+      </Content>
+    }
+    hasTrigger={
+      <LwButton isCircle variant='plain' aria-label='SLA help'>
+        <HelpIcon />
+      </LwButton>
+    }
+  />
+);
 
 const DROP_LAST_CHROME_SEGMENT_OPTIONS = { dropLastChromeSegment: true };
 
@@ -202,11 +240,16 @@ const Beacon = () => {
   const { data: lastUpdated } = useBeaconStatusQuery();
 
   const isLoading = !displayData && isLoadingDisplay;
+  const { containerRef: summaryDonutContainerRef, width: summaryDonutWidth } =
+    useContainerWidth(SUMMARY_DONUT_DEFAULT_WIDTH);
 
   if (isError) throw error;
 
   const filteredVulns = displayData?.vulnerabilities ?? [];
   const displayMeta = displayData?.meta;
+  const summaryTotal = displayMeta?.count ?? filteredVulns.length;
+  const summaryDonut = getBeaconSummaryDonutModel(displayMeta?.statusCounts);
+  const summaryDonutHeight = getMatchDonutChartHeight(summaryDonutWidth);
 
   const toggleShowAllCategory = (key: string) => {
     setShowAllCategories((prev) => ({ ...prev, [key]: !prev[key] }));
@@ -265,7 +308,14 @@ const Beacon = () => {
         <PageChromeSlots>
           <PageChromeSlot>
             <PageTitleStack
-              title='Beacon'
+              title={
+                <div className='lw-c-page-title-stack__title'>
+                  <LwTitle headingLevel='h1' ouiaId='lightwell-beacon-header'>
+                    Beacon
+                  </LwTitle>
+                  {slaHelpPopover}
+                </div>
+              }
               description={
                 <>
                   Understand the status of your Lightwell submissions
@@ -277,7 +327,6 @@ const Beacon = () => {
                   ) : null}
                 </>
               }
-              ouiaId='lightwell-beacon-header'
             />
             <PageChromeSlotFooter>
               <LwMetricsStepper
@@ -317,79 +366,32 @@ const Beacon = () => {
             </PageChromeSlot>
           ) : selectedCustomerId ? (
             <PageChromeSlot>
-              <LwMetricsCard
-                hasHeader={`Vulnerability Summary${activeFilterCount > 0 ? ' (filtered)' : ''}`}
-                hasAction={
-                  <LwPopover
-                    hasHeader='SLA Policy'
-                    hasBody={
-                      <Content>
-                        <p>
-                          <strong>Submit</strong> vulnerabilities to the clearinghouse at any time.
-                        </p>
-                        <p>
-                          <strong>Triage within 48 hours.</strong>
-                        </p>
-                        <p>
-                          <strong>Priority is yours.</strong> Your severity sets the default order.
-                          Adjust at any time.
-                        </p>
-                        <p>
-                          A fix is complete when a patched artifact is published in the repository
-                          (or when it gets to the Lightwell Network).
-                        </p>
-                        <br />
-                        <p>
-                          SLA applies to up to 25 findings per member per week. All other findings
-                          are worked continuously on a best-effort basis.
-                        </p>
-                      </Content>
-                    }
-                    hasTrigger={
-                      <LwButton isCircle variant='plain' aria-label='SLA help'>
-                        <HelpIcon />
-                      </LwButton>
-                    }
-                  />
-                }
-              >
+              <LwMetricsCard>
                 <LwLoaded
                   isLoaded={!isLoading}
                   fallback={
-                    <LwMetricsCountSlots>
-                      <Flex
-                        direction={{ default: 'column' }}
-                        gap={{ default: 'gapSm' }}
-                        alignItems={{ default: 'alignItemsCenter' }}
-                      >
-                        <LwSkeleton
-                          fontSize='3xl'
-                          width='4ch'
-                          screenreaderText='Loading status summary'
-                        />
-                        <LwSkeleton fontSize='sm' width='5ch' />
-                      </Flex>
-                      <Flex
-                        direction={{ default: 'column' }}
-                        gap={{ default: 'gapSm' }}
-                        alignItems={{ default: 'alignItemsCenter' }}
-                      >
-                        <LwSkeleton fontSize='3xl' width='4ch' />
-                        <LwSkeleton fontSize='sm' width='5ch' />
-                      </Flex>
-                    </LwMetricsCountSlots>
+                    <LwSkeleton
+                      height={`${summaryDonutHeight}px`}
+                      width='100%'
+                      screenreaderText='Loading status summary'
+                    />
                   }
                 >
-                  <LwMetricsCountSlots>
-                    <LwMetricsCount
-                      value={displayMeta?.statusCounts?.[UNREMEDIATED_STATUS] ?? 0}
-                      label={NO_REMEDIATION_LABEL}
-                    />
-                    <LwMetricsCount
-                      value={displayMeta?.count ?? filteredVulns.length}
-                      label='Total'
-                    />
-                  </LwMetricsCountSlots>
+                  <LwMetricsDonutChart
+                    data={summaryDonut.data}
+                    colorScale={summaryDonut.colorScale}
+                    legendData={summaryDonut.legendData}
+                    legendPosition='bottom'
+                    legendOrientation='horizontal'
+                    legendAllowWrap
+                    getLabel={summaryDonut.getLabel}
+                    width={summaryDonutWidth}
+                    height={summaryDonutHeight}
+                    title={String(summaryTotal)}
+                    subTitle='Total'
+                    ariaDesc='Vulnerability summary donut chart'
+                    containerRef={summaryDonutContainerRef}
+                  />
                 </LwLoaded>
               </LwMetricsCard>
             </PageChromeSlot>
